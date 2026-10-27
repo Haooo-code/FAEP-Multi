@@ -1,0 +1,91 @@
+<launch>
+  <!-- FAEP 多机扩展 —— 单机仿真栈（namespace 化）
+       由 multi_sim.launch 以不同 id/初始位置 include 三次，构成三机同场仿真。
+       包含：SO3 动力学 / SO3 控制器 / 里程计噪声注入 / CUDA 深度渲染 / 机体可视化。
+       所有话题显式带 /droneN 前缀，避免多机互相抢占；全局点云共享同一份真值地图。 -->
+
+  <arg name="id"/>                 <!-- 无人机编号（1 起） -->
+  <arg name="init_x"/>
+  <arg name="init_y"/>
+  <arg name="init_z"/>
+  <arg name="map_size_x_"/>
+  <arg name="map_size_y_"/>
+  <arg name="map_size_z_"/>
+  <!-- 机体可视化默认仅 1 号机开启：odom_visualization 会广播固定 world->base 的 TF，
+       多机同开会导致同名 TF 冲突；骨架阶段 2、3 号机先关闭（后续出多机示意图时再改） -->
+  <arg name="use_odom_vis" default="true"/>
+  <arg name="odom_vis_r" default="1.0"/>
+  <arg name="odom_vis_g" default="0.0"/>
+  <arg name="odom_vis_b" default="0.0"/>
+
+  <group ns="drone$(arg id)">
+
+    <!-- SO3 动力学仿真 -->
+    <node pkg="so3_quadrotor_simulator" type="quadrotor_simulator_so3" name="quadrotor_simulator_so3" output="screen">
+      <param name="rate/odom" value="200.0"/>
+      <param name="simulator/init_state_x" value="$(arg init_x)"/>
+      <param name="simulator/init_state_y" value="$(arg init_y)"/>
+      <param name="simulator/init_state_z" value="$(arg init_z)"/>
+
+      <remap from="~odom" to="/drone$(arg id)/visual_slam/odom"/>
+      <remap from="~cmd" to="/drone$(arg id)/so3_cmd"/>
+      <remap from="~force_disturbance" to="/drone$(arg id)/force_disturbance"/>
+      <remap from="~moment_disturbance" to="/drone$(arg id)/moment_disturbance"/>
+    </node>
+
+    <!-- SO3 控制器 -->
+    <node pkg="nodelet" type="nodelet" args="standalone so3_control/SO3ControlNodelet" name="so3_control" required="true" output="screen">
+      <remap from="~odom" to="/drone$(arg id)/state_ukf/odom"/>
+      <remap from="~position_cmd" to="/drone$(arg id)/planning/pos_cmd"/>
+      <remap from="~motors" to="/drone$(arg id)/motors"/>
+      <remap from="~corrections" to="/drone$(arg id)/corrections"/>
+      <remap from="~so3_cmd" to="/drone$(arg id)/so3_cmd"/>
+      <rosparam file="$(find so3_control)/config/gains_hummingbird.yaml"/>
+      <rosparam file="$(find so3_control)/config/corrections_hummingbird.yaml"/>
+      <param name="mass" value="0.98"/>
+      <param name="use_angle_corrections " value="false"/>
+      <param name="use_external_yaw "      value="false"/>
+      <param name="gains/rot/z" value="1.0"/>
+      <param name="gains/ang/z" value="0.1"/>
+    </node>
+
+    <!-- 里程计噪声注入（真实系统里替代状态估计模块） -->
+    <node pkg="so3_disturbance_generator" name="so3_disturbance_generator" type="so3_disturbance_generator" output="screen">
+      <remap from="~odom" to="/drone$(arg id)/visual_slam/odom"/>
+      <remap from="~noisy_odom" to="/drone$(arg id)/state_ukf/odom"/>
+      <remap from="~correction" to="/drone$(arg id)/visual_slam/correction"/>
+      <remap from="~force_disturbance" to="/drone$(arg id)/force_disturbance"/>
+      <remap from="~moment_disturbance" to="/drone$(arg id)/moment_disturbance"/>
+    </node>
+
+    <!-- 机体可视化（可选，见文件头说明） -->
+    <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen" if="$(arg use_odom_vis)">
+      <remap from="~odom" to="/drone$(arg id)/visual_slam/odom"/>
+      <param name="color/a" value="1.0"/>
+      <param name="color/r" value="$(arg odom_vis_r)"/>
+      <param name="color/g" value="$(arg odom_vis_g)"/>
+      <param name="color/b" value="$(arg odom_vis_b)"/>
+      <param name="covariance_scale" value="100.0"/>
+      <param name="robot_scale" value="1.0"/>
+    </node>
+
+    <!-- CUDA 深度渲染：全局点云共享（~global_map 指到同一真值话题） -->
+    <node pkg="local_sensing_node" type="pcl_render_node" name="pcl_render_node" output="screen">
+      <rosparam command="load" file="$(find local_sensing_node)/params/camera.yaml" />
+      <param name="sensing_horizon"  value="5.0" />
+      <param name="sensing_rate"     value="30.0"/>
+      <param name="estimation_rate"  value="30.0"/>
+
+      <param name="map/x_size"     value="$(arg map_size_x_)"/>
+      <param name="map/y_size"     value="$(arg map_size_y_)"/>
+      <param name="map/z_size"     value="$(arg map_size_z_)"/>
+
+      <remap from="~global_map" to="/map_generator/global_cloud"/>
+      <remap from="~odometry"   to="/drone$(arg id)/state_ukf/odom"/>
+      <!-- 以下两个话题在源码中为全局名，必须显式加机号前缀，否则多机互相抢占 -->
+      <remap from="/pcl_render_node/depth"       to="/drone$(arg id)/pcl_render_node/depth"/>
+      <remap from="/pcl_render_node/sensor_pose" to="/drone$(arg id)/pcl_render_node/sensor_pose"/>
+    </node>
+
+  </group>
+</launch>

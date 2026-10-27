@@ -1,0 +1,73 @@
+<launch>
+  <!-- FAEP 多机扩展 —— 总入口：三机仿真 + 三机算法（+ 可选协调器）
+       用法：
+         roslaunch exploration_manager multi_bringup.launch                          # B 组（独立）
+         roslaunch exploration_manager multi_bringup.launch use_coord:=true          # C 组（协同）
+         roslaunch exploration_manager multi_bringup.launch map_file:=/path/big_map.pcd \
+           box_x_min:=-20 box_y_min:=-20 box_x_max:=20 box_y_max:=20 \
+           d1_x:=-15 d1_y:=-15 d2_x:=15 d2_y:=-15 d3_x:=0 d3_y:=15                  # 大场景示例
+       启动后向 /drone{1,2,3}/move_base_simple/goal 各发一个 PoseStamped 触发探索 -->
+
+  <arg name="map_file" default="$(find map_generator)/resource/office.pcd"/>
+
+  <arg name="box_x_min" default="-8.0"/>
+  <arg name="box_y_min" default="-15.0"/>
+  <arg name="box_z_min" default="-0.1"/>
+  <arg name="box_x_max" default="8.0"/>
+  <arg name="box_y_max" default="15.0"/>
+  <arg name="box_z_max" default="2.0"/>
+
+  <arg name="d1_x" default="-6.0"/> <arg name="d1_y" default="0.0"/>  <arg name="d1_z" default="1.0"/>
+  <arg name="d2_x" default="6.0"/>  <arg name="d2_y" default="2.0"/>  <arg name="d2_z" default="1.4"/>
+  <arg name="d3_x" default="0.0"/>  <arg name="d3_y" default="10.0"/> <arg name="d3_z" default="1.8"/>
+
+  <!-- use_coord=true：启动协调器 + 各机接受任务分配（C 组）；false：三机独立探索（B 组） -->
+  <arg name="use_coord" default="false"/>
+  <!-- v2.0：空间分区（每机只探自己扇区），需配合 use_coord:=true -->
+  <arg name="partition_mode" default="false"/>
+  <!-- v2.1：等面积分区（显式分界），需配合 partition_mode:=true -->
+  <arg name="equal_area_mode" default="false"/>
+  <arg name="sector_axis" default="-1"/>
+  <arg name="sector_bounds" default=""/>
+  <arg name="recovery_grace" default="20.0"/>
+  <arg name="recovery_timeout" default="150.0"/>
+
+  <include file="$(find exploration_manager)/launch/multi/multi_sim.launch">
+    <arg name="map_file" value="$(arg map_file)"/>
+    <arg name="d1_x" value="$(arg d1_x)"/>
+    <arg name="d1_y" value="$(arg d1_y)"/>
+    <arg name="d1_z" value="$(arg d1_z)"/>
+    <arg name="d2_x" value="$(arg d2_x)"/>
+    <arg name="d2_y" value="$(arg d2_y)"/>
+    <arg name="d2_z" value="$(arg d2_z)"/>
+    <arg name="d3_x" value="$(arg d3_x)"/>
+    <arg name="d3_y" value="$(arg d3_y)"/>
+    <arg name="d3_z" value="$(arg d3_z)"/>
+  </include>
+
+  <include file="$(find exploration_manager)/launch/multi/multi_explore.launch">
+    <arg name="use_coord" value="$(arg use_coord)"/>
+    <arg name="partition_mode" value="$(arg partition_mode)"/>
+    <arg name="equal_area_mode" value="$(arg equal_area_mode)"/>
+    <arg name="sector_axis" value="$(arg sector_axis)"/>
+    <arg name="sector_bounds" value="$(arg sector_bounds)"/>
+    <arg name="recovery_grace" value="$(arg recovery_grace)"/>
+    <arg name="recovery_timeout" value="$(arg recovery_timeout)"/>
+    <arg name="box_x_min" value="$(arg box_x_min)"/>
+    <arg name="box_y_min" value="$(arg box_y_min)"/>
+    <arg name="box_z_min" value="$(arg box_z_min)"/>
+    <arg name="box_x_max" value="$(arg box_x_max)"/>
+    <arg name="box_y_max" value="$(arg box_y_max)"/>
+    <arg name="box_z_max" value="$(arg box_z_max)"/>
+    <arg name="d1_x" value="$(arg d1_x)"/>
+    <arg name="d1_y" value="$(arg d1_y)"/>
+    <arg name="d1_z" value="$(arg d1_z)"/>
+    <arg name="d2_x" value="$(arg d2_x)"/>
+    <arg name="d2_y" value="$(arg d2_y)"/>
+    <arg name="d2_z" value="$(arg d2_z)"/>
+    <arg name="d3_x" value="$(arg d3_x)"/>
+    <arg name="d3_y" value="$(arg d3_y)"/>
+    <arg name="d3_z" value="$(arg d3_z)"/>
+  </include>
+
+</launch>

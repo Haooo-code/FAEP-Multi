@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite FAEP, FUEL, and this repository."
+title: "FAEP-Multi: three-UAV cooperative exploration"
+type: software
+authors:
+  - name: "FAEP-Multi Team"
+repository-code: "https://github.com/Haooo-code/FAEP-Multi"
+license: "GPL-3.0-only"
+version: "1.0.0"
+date-released: "2026-10-27"
+references:
+  - type: software
+    title: "FAEP: Fast Autonomous Exploration Planner"
+    authors:
+      - name: "Zyhlibrary"
+    url: "https://github.com/Zyhlibrary/FAEP"
+  - type: article
+    title: "FUEL: Fast UAV Exploration Using Incremental Frontier Structure and Hierarchical Planning"
+    authors:
+      - family-names: "Zhou"
+        given-names: "Boyu"
+      - family-names: "Zhang"
+        given-names: "Yichen"
+      - family-names: "Chen"
+        given-names: "Xinyi"
+      - family-names: "Shen"
+        given-names: "Shaojie"
+    year: 2021
+    journal: "IEEE Robotics and Automation Letters"
+    volume: 6
+    issue: 2
+    start: 779
+    end: 786

@@ -1,0 +1,70 @@
+<launch>
+  <!-- FAEP 多机扩展 —— 三机同场仿真（骨架阶段：无协调，各自可飞）
+       - 三机共享同一份真值地图（office 场景，由 map_pub 发布）
+       - 初始位置水平分散；高度 1.0/1.4/1.8 m（低于场景障碍顶 2.4 m，仅作轻度垂直区分）
+       - 场景障碍在 z∈[0,2.4] 全高度覆盖，垂直分层无法完全防撞，
+         骨架阶段主要依赖初始分散与后续协调器的任务分配 -->
+
+  <arg name="map_size_x" value="50.0"/>
+  <arg name="map_size_y" value="50.0"/>
+  <arg name="map_size_z" value="10.0"/>
+
+  <!-- 场景地图文件（默认 office；大场景用 big_map.pcd 等） -->
+  <arg name="map_file" default="$(find map_generator)/resource/office.pcd"/>
+
+  <!-- 各机初始位置（已用净空扫描验证：z=1.0/1.4/1.8 处 1m 半径内无场景点；
+       原稿 (6,0) 位于障碍物内部导致该机 A* 无解，(0,9) 净空不足，均已避开） -->
+  <arg name="d1_x" default="-6.0"/> <arg name="d1_y" default="0.0"/>  <arg name="d1_z" default="1.0"/>
+  <arg name="d2_x" default="6.0"/>  <arg name="d2_y" default="2.0"/>  <arg name="d2_z" default="1.4"/>
+  <arg name="d3_x" default="0.0"/>  <arg name="d3_y" default="10.0"/> <arg name="d3_z" default="1.8"/>
+
+  <!-- 共享真值地图（全局点云，三机深度渲染共用） -->
+  <node pkg="map_generator" name="map_pub" type="map_pub" output="screen"
+        args="$(arg map_file)"/>
+
+  <!-- 1 号机 -->
+  <include file="$(find exploration_manager)/launch/multi/single_drone_stack.launch">
+    <arg name="id" value="1"/>
+    <arg name="init_x" value="$(arg d1_x)"/>
+    <arg name="init_y" value="$(arg d1_y)"/>
+    <arg name="init_z" value="$(arg d1_z)"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="use_odom_vis" value="true"/>
+    <arg name="odom_vis_r" value="1.0"/>
+    <arg name="odom_vis_g" value="0.0"/>
+    <arg name="odom_vis_b" value="0.0"/>
+  </include>
+
+  <!-- 2 号机 -->
+  <include file="$(find exploration_manager)/launch/multi/single_drone_stack.launch">
+    <arg name="id" value="2"/>
+    <arg name="init_x" value="$(arg d2_x)"/>
+    <arg name="init_y" value="$(arg d2_y)"/>
+    <arg name="init_z" value="$(arg d2_z)"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="use_odom_vis" value="true"/>
+    <arg name="odom_vis_r" value="0.0"/>
+    <arg name="odom_vis_g" value="0.85"/>
+    <arg name="odom_vis_b" value="0.1"/>
+  </include>
+
+  <!-- 3 号机 -->
+  <include file="$(find exploration_manager)/launch/multi/single_drone_stack.launch">
+    <arg name="id" value="3"/>
+    <arg name="init_x" value="$(arg d3_x)"/>
+    <arg name="init_y" value="$(arg d3_y)"/>
+    <arg name="init_z" value="$(arg d3_z)"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="use_odom_vis" value="true"/>
+    <arg name="odom_vis_r" value="0.1"/>
+    <arg name="odom_vis_g" value="0.35"/>
+    <arg name="odom_vis_b" value="1.0"/>
+  </include>
+
+</launch>

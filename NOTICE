@@ -1,0 +1,21 @@
+FAEP-Multi
+
+本项目基于 FAEP（https://github.com/Zyhlibrary/FAEP）二次开发。
+上游基线 commit：5a59d0a04b527e2e93d0ac8c00111c74d6da288f（2023-06-23）。
+FAEP 的衍生部分按 GPL-3.0 发布，并保留上游版权声明。
+
+本项目新增或修改的内容：
+- 三机命名空间、共享真值地图和多机仿真组织
+- coord_msgs 与 coordinator 协调器
+- v2.0 一维 Voronoi 扇区归属与单机前沿过滤
+- KinodynamicAstar::getSamples 的 OOM 根因修复与四层防御
+- A/B/C 批跑、覆盖分析、故障注入、图表和视频脚本
+
+LKH TSP 求解器是 FAEP 随附的独立第三方组件，适用其原始许可条款。
+本项目不对 LKH 重新授权，也不将其纳入 GPL-3.0 的授权范围。LKH 目录内的
+Delaunay 代码包含 RMIT 版权声明，公开再分发前需要按原始条款核实。
+
+仿真地图 office.pcd、office2.pcd、office3.pcd 取自 FAEP 上游仓库
+uav_simulator/map_generator/resource/，不是赛事提供的地图。
+
+完整第三方清单见 docs/THIRD_PARTY_LICENSES.md。

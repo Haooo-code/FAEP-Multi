@@ -1,0 +1,79 @@
+<launch>
+  <!-- size of map, change the size in x, y, z according to your application -->
+  <!-- 用 default 而非 value：允许命令行/父级 launch 覆盖（大场景实验用） -->
+  <arg name="map_size_x" default="50.0"/>
+  <arg name="map_size_y" default="50.0"/>
+  <arg name="map_size_z" default=" 10.0"/>
+
+  <arg name="init_x" default="0.0"/>
+  <arg name="init_y" default="0.0"/>
+  <arg name="init_z" default="1.0"/> 
+
+  <!-- 地图文件（默认 office；大场景可传 office2/office3/big_map） -->
+  <arg name="map_file" default="$(find map_generator)/resource/office.pcd"/>
+
+  <!-- topic of your odometry such as VIO or LIO -->
+  <arg name="odom_topic" value="/state_ukf/odom" />
+
+  <!-- main algorithm params -->
+  <include file="$(find exploration_manager)/launch/algorithm.xml">
+
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="odometry_topic" value="$(arg odom_topic)"/>
+
+    <arg name="init_x" value="$(arg init_x)"/>
+    <arg name="init_y" value="$(arg init_y)"/>
+    <arg name="init_z" value="$(arg init_z)"/> 
+
+    <!-- sensor pose: transform of camera frame in the world frame -->
+    <arg name="sensor_pose_topic" value="/pcl_render_node/sensor_pose"/>
+    <!-- depth topic: depth image, 640x480 by default -->
+    <!-- cloud topic: point cloud measurement  -->
+    <!-- subscribe ONLY TO ONE of the two topics -->
+    <arg name="depth_topic" value="/pcl_render_node/depth"/>
+    <arg name="cloud_topic" value="/pcl_render_node/cloud"/>
+
+    <!-- intrinsic params of the depth camera -->
+    <arg name="cx" value="321.04638671875"/>
+    <arg name="cy" value="243.44969177246094"/>
+    <arg name="fx" value="387.229248046875"/>
+    <arg name="fy" value="387.229248046875"/>
+
+    <!-- maximum velocity and acceleration the drone will reach -->
+    <arg name="max_vel" value="2.0" />
+    <arg name="max_acc" value="2.0" />
+
+    <arg name="box_x_min" value="-8" />
+    <arg name="box_y_min" value="-15" />
+    <arg name="box_z_min" value="-0.1" />
+    <arg name="box_x_max" value="8" />
+    <arg name="box_y_max" value="15" />
+    <arg name="box_z_max" value="2" />
+  </include>
+
+  <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
+    <remap from="~odom" to="$(arg odom_topic)"/>        
+    <remap from="~goal" to="/move_base_simple/goal"/>
+    <remap from="~traj_start_trigger" to="/traj_start_trigger" />
+    <param name="waypoint_type" value="point"/>    
+  </node>
+
+  <!-- use simulator -->
+  <include file="$(find exploration_manager)/launch/simulator.xml">
+    <arg name="map_file" value="$(arg map_file)"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+
+    <arg name="init_x" value="$(arg init_x)"/>
+    <arg name="init_y" value="$(arg init_y)"/>
+    <arg name="init_z" value="$(arg init_z)"/>
+
+    <arg name="odometry_topic" value="$(arg odom_topic)" />
+    <arg name="c_num" value="0"/>
+    <arg name="p_num" value="130"/>
+  </include>
+
+</launch>

@@ -1,0 +1,56 @@
+<launch>
+  <arg name="map_size_x_"/>
+  <arg name="map_size_y_"/>
+  <arg name="map_size_z_"/>
+
+  <arg name="odometry_topic"/>
+  <arg name="sensor_pose_topic"/>
+  <arg name="depth_topic"/>
+  <arg name="cloud_topic"/>
+
+  <arg name="cx"/>
+  <arg name="cy"/>
+  <arg name="fx"/>
+  <arg name="fy"/>
+
+  <arg name="max_vel"/>
+  <arg name="max_acc"/>
+
+  <arg name="init_x"/>
+  <arg name="init_y"/>
+  <arg name="init_z"/> 
+
+  <arg name="box_x_min"/>
+  <arg name="box_y_min"/>
+  <arg name="box_z_min"/> 
+  <arg name="box_x_max"/>
+  <arg name="box_y_max"/>
+  <arg name="box_z_max"/> 
+  
+
+  <!-- main node -->  <include file="$(find exploration_manager)/launch/algorithm_node.xml">
+    <arg name="box_x_max" value="$(arg box_x_max)"/>
+    <arg name="box_x_min" value="$(arg box_x_min)"/>
+    <arg name="box_y_max" value="$(arg box_y_max)"/>
+    <arg name="box_y_min" value="$(arg box_y_min)"/>
+    <arg name="box_z_max" value="$(arg box_z_max)"/>
+    <arg name="box_z_min" value="$(arg box_z_min)"/>
+    <arg name="cloud_topic" value="$(arg cloud_topic)"/>
+    <arg name="cx" value="$(arg cx)"/>
+    <arg name="cy" value="$(arg cy)"/>
+    <arg name="depth_topic" value="$(arg depth_topic)"/>
+    <arg name="fx" value="$(arg fx)"/>
+    <arg name="fy" value="$(arg fy)"/>
+    <arg name="init_x" value="$(arg init_x)"/>
+    <arg name="init_y" value="$(arg init_y)"/>
+    <arg name="init_z" value="$(arg init_z)"/>
+    <arg name="map_size_x_" value="$(arg map_size_x_)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y_)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z_)"/>
+    <arg name="max_acc" value="$(arg max_acc)"/>
+    <arg name="max_vel" value="$(arg max_vel)"/>
+    <arg name="odometry_topic" value="$(arg odometry_topic)"/>
+    <arg name="sensor_pose_topic" value="$(arg sensor_pose_topic)"/>
+  </include>
+
+</launch>

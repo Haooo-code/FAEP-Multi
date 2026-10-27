@@ -1,0 +1,24 @@
+# Build and ROS runtime
+build/
+devel/
+install/
+logs/
+.ros/
+*.bag
+*.log
+
+# Compiled and generated files
+*.so
+*.a
+*.o
+*.d
+*.pyc
+__pycache__/
+.venv/
+tmp/
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

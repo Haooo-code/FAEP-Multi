@@ -1,0 +1,170 @@
+<launch>
+  <!-- FAEP 多机扩展 —— 三机算法栈 + 触发节点
+       触发方式：向 /droneN/move_base_simple/goal 发 PoseStamped（见 scripts/trigger_multi.sh）
+       大场景：改 box_* 为场景实际范围，并相应调整初始位置 arg -->
+
+  <arg name="map_size_x" default="50.0"/>
+  <arg name="map_size_y" default="50.0"/>
+  <arg name="map_size_z" default="10.0"/>
+
+  <!-- 探索边界框（office 默认；大场景实验时覆盖） -->
+  <arg name="box_x_min" default="-8.0"/>
+  <arg name="box_y_min" default="-15.0"/>
+  <arg name="box_z_min" default="-0.1"/>
+  <arg name="box_x_max" default="8.0"/>
+  <arg name="box_y_max" default="15.0"/>
+  <arg name="box_z_max" default="2.0"/>
+
+  <!-- 各机初始位置（必须与 multi_sim.launch 一致） -->
+  <arg name="d1_x" default="-6.0"/> <arg name="d1_y" default="0.0"/>  <arg name="d1_z" default="1.0"/>
+  <arg name="d2_x" default="6.0"/>  <arg name="d2_y" default="2.0"/>  <arg name="d2_z" default="1.4"/>
+  <arg name="d3_x" default="0.0"/>  <arg name="d3_y" default="10.0"/> <arg name="d3_z" default="1.8"/>
+
+  <arg name="max_vel" default="2.0"/>
+  <arg name="max_acc" default="2.0"/>
+
+  <!-- 多机协同开关：true=启动协调器并让各机接受任务分配；false=三机独立探索（B 组对照） -->
+  <arg name="use_coord" default="false"/>
+
+  <!-- v2.0 空间分区：true=按各机初始位置划分扇区（每机只探自己的扇区） -->
+  <arg name="partition_mode" default="false"/>
+  <!-- v2.1 等面积分区：分界由工具按地图自由区面积离线计算，逗号分隔（N-1 条） -->
+  <arg name="equal_area_mode" default="false"/>
+  <arg name="sector_axis" default="-1"/>       <!-- -1=自动，0=x，1=y -->
+  <arg name="sector_bounds" default=""/>       <!-- 例：office2 "-3.60,2.97" -->
+  <arg name="recovery_grace" default="20.0"/>  <!-- 失联降级后的恢复缓冲（秒） -->
+  <arg name="recovery_timeout" default="150.0"/> <!-- 失联降级后的恢复总时限（秒） -->
+
+  <!-- 中央协调器（仅 use_coord=true 时启动） -->
+  <node pkg="coordinator" type="faep_coordinator" name="faep_coordinator" output="screen" if="$(arg use_coord)">
+    <param name="drone_num" value="3"/>
+    <param name="merge_dist" value="1.5"/>
+    <param name="task_radius" value="2.0"/>
+    <param name="lease_dur" value="60.0"/>
+    <param name="task_lost_time" value="8.0"/>
+    <param name="status_timeout" value="10.0"/>
+    <param name="tick_period" value="0.2"/>
+    <param name="load_weight" value="8.0"/>
+    <param name="free_wait_time" value="20.0"/>
+    <param name="global_timeout" value="900.0"/>
+    <param name="stagnation_time" value="180.0"/>
+    <param name="task_max_age" value="150.0"/>
+    <param name="partition_mode" value="$(arg partition_mode)"/>
+    <param name="equal_area_mode" value="$(arg equal_area_mode)"/>
+    <param name="sector_axis" value="$(arg sector_axis)"/>
+    <param name="sector_bounds" value="$(arg sector_bounds)"/>
+    <param name="recovery_grace" value="$(arg recovery_grace)"/>
+    <param name="recovery_timeout" value="$(arg recovery_timeout)"/>
+  </node>
+
+  <!-- 1 号机算法 -->
+  <include file="$(find exploration_manager)/launch/multi/algorithm_multi.xml">
+    <arg name="drone_id" value="1"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="odometry_topic" value="/drone1/state_ukf/odom"/>
+    <arg name="sensor_pose_topic" value="/drone1/pcl_render_node/sensor_pose"/>
+    <arg name="depth_topic" value="/drone1/pcl_render_node/depth"/>
+    <arg name="cloud_topic" value="/drone1/pcl_render_node/cloud"/>
+    <arg name="cx" value="321.04638671875"/>
+    <arg name="cy" value="243.44969177246094"/>
+    <arg name="fx" value="387.229248046875"/>
+    <arg name="fy" value="387.229248046875"/>
+    <arg name="max_vel" value="$(arg max_vel)"/>
+    <arg name="max_acc" value="$(arg max_acc)"/>
+    <arg name="init_x" value="$(arg d1_x)"/>
+    <arg name="init_y" value="$(arg d1_y)"/>
+    <arg name="init_z" value="$(arg d1_z)"/>
+    <arg name="box_x_min" value="$(arg box_x_min)"/>
+    <arg name="box_y_min" value="$(arg box_y_min)"/>
+    <arg name="box_z_min" value="$(arg box_z_min)"/>
+    <arg name="box_x_max" value="$(arg box_x_max)"/>
+    <arg name="box_y_max" value="$(arg box_y_max)"/>
+    <arg name="box_z_max" value="$(arg box_z_max)"/>
+    <arg name="use_coord" value="$(arg use_coord)"/>
+  </include>
+
+  <!-- 2 号机算法 -->
+  <include file="$(find exploration_manager)/launch/multi/algorithm_multi.xml">
+    <arg name="drone_id" value="2"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="odometry_topic" value="/drone2/state_ukf/odom"/>
+    <arg name="sensor_pose_topic" value="/drone2/pcl_render_node/sensor_pose"/>
+    <arg name="depth_topic" value="/drone2/pcl_render_node/depth"/>
+    <arg name="cloud_topic" value="/drone2/pcl_render_node/cloud"/>
+    <arg name="cx" value="321.04638671875"/>
+    <arg name="cy" value="243.44969177246094"/>
+    <arg name="fx" value="387.229248046875"/>
+    <arg name="fy" value="387.229248046875"/>
+    <arg name="max_vel" value="$(arg max_vel)"/>
+    <arg name="max_acc" value="$(arg max_acc)"/>
+    <arg name="init_x" value="$(arg d2_x)"/>
+    <arg name="init_y" value="$(arg d2_y)"/>
+    <arg name="init_z" value="$(arg d2_z)"/>
+    <arg name="box_x_min" value="$(arg box_x_min)"/>
+    <arg name="box_y_min" value="$(arg box_y_min)"/>
+    <arg name="box_z_min" value="$(arg box_z_min)"/>
+    <arg name="box_x_max" value="$(arg box_x_max)"/>
+    <arg name="box_y_max" value="$(arg box_y_max)"/>
+    <arg name="box_z_max" value="$(arg box_z_max)"/>
+    <arg name="use_coord" value="$(arg use_coord)"/>
+  </include>
+
+  <!-- 3 号机算法 -->
+  <include file="$(find exploration_manager)/launch/multi/algorithm_multi.xml">
+    <arg name="drone_id" value="3"/>
+    <arg name="map_size_x_" value="$(arg map_size_x)"/>
+    <arg name="map_size_y_" value="$(arg map_size_y)"/>
+    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="odometry_topic" value="/drone3/state_ukf/odom"/>
+    <arg name="sensor_pose_topic" value="/drone3/pcl_render_node/sensor_pose"/>
+    <arg name="depth_topic" value="/drone3/pcl_render_node/depth"/>
+    <arg name="cloud_topic" value="/drone3/pcl_render_node/cloud"/>
+    <arg name="cx" value="321.04638671875"/>
+    <arg name="cy" value="243.44969177246094"/>
+    <arg name="fx" value="387.229248046875"/>
+    <arg name="fy" value="387.229248046875"/>
+    <arg name="max_vel" value="$(arg max_vel)"/>
+    <arg name="max_acc" value="$(arg max_acc)"/>
+    <arg name="init_x" value="$(arg d3_x)"/>
+    <arg name="init_y" value="$(arg d3_y)"/>
+    <arg name="init_z" value="$(arg d3_z)"/>
+    <arg name="box_x_min" value="$(arg box_x_min)"/>
+    <arg name="box_y_min" value="$(arg box_y_min)"/>
+    <arg name="box_z_min" value="$(arg box_z_min)"/>
+    <arg name="box_x_max" value="$(arg box_x_max)"/>
+    <arg name="box_y_max" value="$(arg box_y_max)"/>
+    <arg name="box_z_max" value="$(arg box_z_max)"/>
+    <arg name="use_coord" value="$(arg use_coord)"/>
+  </include>
+
+  <!-- 触发节点 ×3（收到 /droneN/move_base_simple/goal 后转发给该机算法节点） -->
+  <group ns="drone1">
+    <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
+      <remap from="~odom" to="/drone1/state_ukf/odom"/>
+      <remap from="~goal" to="/drone1/move_base_simple/goal"/>
+      <remap from="~traj_start_trigger" to="/drone1/traj_start_trigger"/>
+      <param name="waypoint_type" value="point"/>
+    </node>
+  </group>
+  <group ns="drone2">
+    <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
+      <remap from="~odom" to="/drone2/state_ukf/odom"/>
+      <remap from="~goal" to="/drone2/move_base_simple/goal"/>
+      <remap from="~traj_start_trigger" to="/drone2/traj_start_trigger"/>
+      <param name="waypoint_type" value="point"/>
+    </node>
+  </group>
+  <group ns="drone3">
+    <node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
+      <remap from="~odom" to="/drone3/state_ukf/odom"/>
+      <remap from="~goal" to="/drone3/move_base_simple/goal"/>
+      <remap from="~traj_start_trigger" to="/drone3/traj_start_trigger"/>
+      <param name="waypoint_type" value="point"/>
+    </node>
+  </group>
+
+</launch>
