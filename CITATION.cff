@@ -5,7 +5,7 @@ type: software
 authors:
   - name: "FAEP-Multi Team"
 repository-code: "https://github.com/Haooo-code/FAEP-Multi"
-license: "GPL-3.0-only"
+license: "GPL-3.0-only AND LicenseRef-LKH-Research-Only"
 version: "1.0.0"
 date-released: "2026-10-27"
 references:

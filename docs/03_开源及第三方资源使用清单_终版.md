@@ -1,14 +1,14 @@
 # 开源及第三方资源使用清单
 
-本清单覆盖运行软件、算法、数据、框架、组件、工具和第三方服务。版本以 2026-10-18 冻结的实验环境为准；标为“需复核”的项目，提交前应按公开仓库的实际打包方式确认后再删除标记。
+本清单覆盖运行软件、算法、数据、框架、组件、工具和第三方服务。版本以 2026-10-18 冻结的实验环境为准，并于 2026-10-27 按公开仓库的实际打包方式复核。
 
 ## 一、软件、算法与框架
 
 | 类别 | 名称 | 版本 / 快照 | 来源 | 许可证 / 授权类型 | 使用方式 | 关键义务 | 自研修改 / 边界 |
 |---|---|---|---|---|---|---|---|
 | 上游算法 | FAEP | master，2023-06-23 快照 | https://github.com/Zyhlibrary/FAEP | GPL-3.0 | 单机自主探索基线，含建图、前沿、LKH 序列、B 样条和仿真栈 | 衍生部分按 GPL-3.0 发布，保留版权与修改说明 | 保留单机核心；新增多机协调、扇区归属、仿真多机化和 OOM 防御 |
-| TSP 求解器 | LKH | 随 FAEP 内置 | FAEP `utils/lkh_tsp_solver`，Keld Helsgaun | 上游原始条款；包内 `package.xml` 标为 TODO，无独立 LICENSE | 全局巡游顺序求解 | 保留 Keld Helsgaun 和上游声明；不将其重新授权为 GPL-3.0；发布前核实再分发条件 | 未修改算法本身 |
-| 几何组件 | Delaunay（LKH 目录内） | 随 LKH 内置 | LKH `src/Delaunay.c`，RMIT 版权声明 | RMIT 独立声明 | LKH 候选集和几何计算 | 保留 RMIT 版权与许可声明；不纳入本项目 GPL-3.0 授权 | 未修改 |
+| TSP 求解器 | LKH | FAEP 未注明具体版本 | FAEP `utils/lkh_tsp_solver`，作者 Keld Helsgaun；官方说明：http://akira.ruc.dk/~keld/research/LKH/ | 研究用途，作者保留全部权利；按作者条款和第三方发行说明，不得用于商业用途；FAEP 包内无独立 LICENSE，`package.xml` 仍写 TODO | 全局巡游顺序求解并链接进 `exploration_node` | 仅限比赛和研究使用；保留作者署名与来源；不重新授权为 GPL-3.0；商业使用前取得授权或改用许可兼容的求解器 | 未修改算法本身，仅适配 FAEP 调用接口 |
+| 几何组件 | Delaunay（LKH 目录内） | 随 LKH 内置 | LKH `src/Delaunay.c`，作者 Geoff Leach，RMIT 版权声明 | RMIT 1993 独立声明：允许复制、使用及制作衍生作品，须保留署名与声明 | LKH 候选集和几何计算 | 保留 RMIT 与作者署名以及原始声明；不将其重新授权为 GPL-3.0 | 未修改 |
 | 消息包 | swarmtal_msgs | 随上游源码 | HKUST/SWARM 生态，FAEP `poly_traj/traj_generator.cpp` 引用 | 按上游仓库许可，发布前复核 | 提供 `drone_onboard_command` 等消息类型；当前 `poly_traj` 构建只编译 `polynomial_traj.cpp`，该文件未进入本实验运行链路 | 保留来源和许可声明；如启用需单独核对 | 未修改，未编译进当前实验 |
 | 机器人中间件 | ROS Noetic | Noetic | https://ros.org | BSD-3-Clause | 节点、话题、launch、TF 和消息通信 | 保留版权与许可声明 | 未修改框架 |
 | 线性代数 | Eigen | 3.3.7 | https://eigen.tuxfamily.org | MPL-2.0 | 矩阵、向量和几何运算 | 保留许可证与版权声明 | 未修改库本身 |
@@ -51,8 +51,9 @@
 
 ## 五、许可结论与发布前复核
 
-- FAEP 的衍生代码按 GPL-3.0 发布，保留上游版权、LICENSE 和修改说明。
-- LKH 是 FAEP 随附的独立第三方组件。当前 FAEP 包内没有独立 LKH LICENSE，`package.xml` 仍写 TODO；Delaunay 代码另有 RMIT 声明。公开仓库发布前必须核实再分发条件，不能把 LKH 直接写成“GPL-3.0”。
+- FAEP 衍生代码和团队新增代码按 GPL-3.0 发布，保留上游版权、LICENSE 和修改说明。
+- 仓库是混合许可项目，不能表述为“整个仓库均为纯 GPL-3.0”。LKH 官方说明为“distributed for research use”，作者保留全部权利；第三方发行说明普遍将其进一步解释为学术、非商业使用。LKH 被链接进 `exploration_node`，因此本公开版本仅面向比赛和研究，商业使用前必须取得 LKH 作者授权或替换求解器。
+- LKH 包内没有独立 LICENSE，`package.xml` 仍写 TODO；本清单以作者公开说明为依据，不虚构许可证名称。Delaunay 代码保留 RMIT 独立声明。
 - 三张 PCD 地图来自 FAEP 上游示例场景，不是赛事提供的地图；保留来源说明。
 - 实验数据由团队自行生成，不包含个人身份信息；发布时按项目许可证处理。
 - 未使用外部预训练模型、外部数据集或需要账号权限的模型服务。

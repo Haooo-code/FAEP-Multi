@@ -71,7 +71,9 @@ roslaunch exploration_manager multi_bringup.launch use_coord:=true partition_mod
 
 ## 许可与引用
 
-FAEP 衍生部分采用 GPL-3.0，保留上游版权和修改说明。LKH TSP 求解器是独立第三方组件，适用其原始许可条款，不在本项目 GPL-3.0 授权范围内；公开仓库保留原始声明。完整清单见 [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md)。
+FAEP 衍生代码和团队新增代码采用 GPL-3.0，保留上游版权和修改说明。仓库是混合许可项目，不应表述为“整个仓库均为纯 GPL-3.0”。
+
+LKH TSP 求解器是独立第三方组件，作者 Keld Helsgaun 的公开说明为研究用途并保留全部权利；第三方发行说明普遍将其解释为学术、非商业使用。LKH 被链接进 `exploration_node`，因此本公开版本仅面向比赛和研究。商业使用前必须取得作者授权或替换为许可兼容的求解器。LKH 不在本项目 GPL-3.0 授权范围内。完整清单见 [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md)。
 
 如果用于研究，请同时引用 FAEP 和 FUEL。引用信息见 [`CITATION.cff`](CITATION.cff)。
 
