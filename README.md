@@ -15,7 +15,7 @@ FAEP-Multi 将开源单机自主探索算法 [FAEP](https://github.com/Zyhlibrar
 | 重复覆盖 | 从 89% 到 98% 降至 0 到 19% |
 | 未分区 v1 | 比独立慢 21.1% 到 29.3% |
 
-三场景数据、轨迹和汇总在 [`data/`](data/)，修订版技术报告在 [`docs/FAEP-Multi_技术报告_修订版.pdf`](docs/FAEP-Multi_技术报告_修订版.pdf)，演示视频在 [`media/`](media/)。
+三场景数据、轨迹和汇总在 [`data/`](data/)，技术报告在 [`docs/FAEP-Multi_技术报告_修订版.pdf`](docs/FAEP-Multi_技术报告_修订版.pdf)，正文末尾附 3 页开源及第三方资源使用清单。演示视频在 [`media/`](media/)。
 
 公开成果链接：[docs/02_成果链接_终版.md](docs/02_成果链接_终版.md)。
 
