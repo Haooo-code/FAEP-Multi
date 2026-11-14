@@ -126,17 +126,43 @@ namespace fast_planner
   {
     task_centers_ = centers;
     task_radii_ = radii;
-    coord_free_explore_ = free_explore;
+    // 复核期间忽略扇区白名单，由复核目标先验限制搜索范围。
+    coord_free_explore_ = verification_active_ ? true : free_explore;
     coord_partition_ = partition;
     sector_axis_ = sector_axis;
     sector_lo_ = sector_lo;
     sector_hi_ = sector_hi;
   }
 
+  void FastExplorationManager::setVerificationTarget(bool active, const Vector3d &center,
+                                                     double radius)
+  {
+    const bool changed =
+        active != verification_active_ || (active && (center - verification_center_).norm() > 1e-6);
+    const bool was_active = verification_active_;
+    if (active && !verification_active_)
+      verification_saved_free_explore_ = coord_free_explore_;
+    if (!active && verification_active_)
+      coord_free_explore_ = verification_saved_free_explore_;
+    verification_active_ = active;
+    verification_center_ = center;
+    verification_radius_ = std::max(0.5, radius);
+    if (active && target_search_start_.isZero())
+      target_search_start_ = ros::Time::now();
+    if (active && changed)
+    {
+      coord_free_explore_ = true;
+      ROS_WARN("[TARGET] verification target set at (%.2f, %.2f, %.2f), radius %.2f",
+               center.x(), center.y(), center.z(), verification_radius_);
+    }
+    else if (!active && was_active)
+      ROS_INFO("[TARGET] verification target cleared");
+  }
+
   void FastExplorationManager::getFrontiersBrief(vector<Vector3d> &centers, vector<double> &sizes)
   {
     frontier_finder_->getFrontiersBrief(centers, sizes);
-    if (!coord_enabled_ || !coord_partition_)
+    if (!coord_enabled_ || !coord_partition_ || verification_active_)
       return;
     // v2.0：只上报本机扇区内的前沿（含 0.6m 容差），任务池按扇区归属、互不干扰
     vector<Vector3d> kept_c;
@@ -325,12 +351,15 @@ namespace fast_planner
         // 先验半径内存在前沿时优先探索；半径内没有前沿时自动回退到全局前沿。
         if (target_search_enabled_ && !filtered.empty())
         {
-          const double radius = currentTargetRadius();
+          const Eigen::Vector3d priority_center =
+              verification_active_ ? verification_center_ : target_prior_center_;
+          const double radius =
+              verification_active_ ? verification_radius_ : currentTargetRadius();
           vector<int> target_priority;
           target_priority.reserve(filtered.size());
           for (size_t i = 0; i < filtered.size(); ++i)
           {
-            Eigen::Vector2d target_xy(target_prior_center_.x(), target_prior_center_.y());
+            Eigen::Vector2d target_xy(priority_center.x(), priority_center.y());
             Eigen::Vector2d frontier_xy(ed_->averages_[filtered[i]].x(),
                                         ed_->averages_[filtered[i]].y());
             if ((frontier_xy - target_xy).norm() <= radius)
@@ -342,7 +371,7 @@ namespace fast_planner
                               "[TARGET] prioritize %zu/%zu frontier(s) within %.2fm of prior "
                               "(%.2f, %.2f)",
                               target_priority.size(), filtered.size(), radius,
-                              target_prior_center_.x(), target_prior_center_.y());
+                              priority_center.x(), priority_center.y());
             filtered.swap(target_priority);
           }
           else

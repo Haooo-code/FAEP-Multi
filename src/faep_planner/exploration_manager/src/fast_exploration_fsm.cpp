@@ -125,6 +125,8 @@ namespace fast_planner
           "/coord/assignment", 10, &FastExplorationFSM::coordAssignmentCallback, this);
       coord_halt_sub_ =
           nh.subscribe("/coord/halt", 10, &FastExplorationFSM::coordHaltCallback, this);
+      coord_target_status_sub_ =
+          nh.subscribe("/target/status", 10, &FastExplorationFSM::coordTargetStatusCallback, this);
       coord_snap_timer_ =
           nh.createTimer(ros::Duration(0.2), &FastExplorationFSM::coordSnapshotTimer, this);
       expl_manager_->setCoordEnabled(true);
@@ -179,6 +181,45 @@ namespace fast_planner
       flight_time = ros::Time::now().toSec() - flight_start;
     ROS_WARN("[COORD] ======== HALT received: exploration over (Flight_time=%.1f s, dist=%.1f m) ========",
              flight_time, flight_distance);
+  }
+
+  void FastExplorationFSM::coordTargetStatusCallback(
+      const coord_msgs::TargetStatusConstPtr &msg)
+  {
+    if (!use_coord_ || halt_received_)
+      return;
+
+    const Eigen::Vector3d position(msg->estimated_position.x, msg->estimated_position.y,
+                                   msg->estimated_position.z);
+    if (msg->state == coord_msgs::TargetStatus::VERIFYING &&
+        msg->verifier_id == static_cast<uint8_t>(drone_id_))
+    {
+      expl_manager_->setVerificationTarget(true, position, 4.0);
+      ROS_WARN("[TARGET] drone%d assigned to verify candidate from drone%d",
+               drone_id_, msg->source_id);
+
+      if (state_ == FINISH && !target_verification_resumed_)
+      {
+        target_verification_resumed_ = true;
+        {
+          std::lock_guard<std::mutex> lock(mtx_plan_);
+          plan_.clear();
+          receive_traj_ = false;
+        }
+        fd_->static_state_ = true;
+        coord_wait_ = false;
+        transitState(PLAN_TRAJ, "target verification");
+        ROS_WARN("[TARGET] verifier drone%d resumes planning", drone_id_);
+      }
+    }
+    else
+    {
+      expl_manager_->setVerificationTarget(false);
+      if (msg->state == coord_msgs::TargetStatus::SEARCHING ||
+          msg->state == coord_msgs::TargetStatus::NOT_FOUND ||
+          msg->state == coord_msgs::TargetStatus::CONFIRMED)
+        target_verification_resumed_ = false;
+    }
   }
 
   void FastExplorationFSM::coordSnapshotTimer(const ros::TimerEvent &e)

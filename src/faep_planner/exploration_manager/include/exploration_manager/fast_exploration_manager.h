@@ -45,6 +45,9 @@ public:
   void setTaskAssignment(const vector<Vector3d>& centers, const vector<double>& radii, bool free_explore,
                          bool partition = false, int sector_axis = 0, double sector_lo = -1e6,
                          double sector_hi = 1e6);
+  // 设置/取消第二架飞机的目标复核区域
+  void setVerificationTarget(bool active, const Vector3d& center = Vector3d::Zero(),
+                             double radius = 3.0);
   // 本机前沿摘要（转发给 fsm 发布快照）
   void getFrontiersBrief(vector<Vector3d>& centers, vector<double>& sizes);
   // 上一次 NO_FRONTIER 是否是"任务过滤清空"导致（true=只是本地没分到活，等待即可；
@@ -86,6 +89,10 @@ private:
   double target_prior_max_radius_ = 10.0;
   ros::Time target_search_start_;
   double currentTargetRadius() const;
+  bool verification_active_ = false;
+  Vector3d verification_center_ = Vector3d::Zero();
+  double verification_radius_ = 3.0;
+  bool verification_saved_free_explore_ = false;
 
   // 点是否落在任一分配任务区域内（含 0.5m 放宽容差）
   bool inTaskRegion(const Vector3d& pt);

@@ -10,5 +10,6 @@ uint8 NOT_FOUND=4
 uint8 state
 float32 confidence
 uint8 source_id
+uint8 verifier_id
 geometry_msgs/Point estimated_position
 string message

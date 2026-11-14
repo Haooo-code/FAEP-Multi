@@ -50,7 +50,7 @@
   <arg name="target_high_confidence" default="0.80"/>
   <arg name="target_low_confidence" default="0.45"/>
   <arg name="target_verification_sources" default="2"/>
-  <arg name="target_verification_timeout" default="10.0"/>
+  <arg name="target_verification_timeout" default="20.0"/>
 
   <include file="$(find exploration_manager)/launch/multi/multi_sim.launch">
     <arg name="map_file" value="$(arg map_file)"/>

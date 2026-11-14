@@ -223,6 +223,8 @@ private:
   Eigen::Vector3d target_position_ = Eigen::Vector3d::Zero();
   float target_confidence_ = 0.0f;
   int target_source_id_ = 0;
+  int target_verifier_id_ = 0;
+  int target_verification_source_id_ = 0;
 
   // 分区是否仍按扇区执行（失联后自动降级）
   bool partitionActive() const
@@ -374,23 +376,26 @@ private:
     }
   }
 
-  void resetTargetSearch()
+  void resetTargetSearch(int notify_verifier = 0)
   {
+    target_verifier_id_ = 0;
     target_state_ = coord_msgs::TargetStatus::SEARCHING;
     target_confirmed_ = false;
     last_target_detection_ = ros::Time();
     target_position_.setZero();
     target_confidence_ = 0.0f;
     target_source_id_ = 0;
+    target_verification_source_id_ = 0;
     for (size_t i = 0; i < target_samples_.size(); ++i)
       target_samples_[i].clear();
     if (pub_target_status_)
       publishTargetStatus(coord_msgs::TargetStatus::SEARCHING, 0.0f, 0,
-                          Eigen::Vector3d::Zero(), "searching");
+                          Eigen::Vector3d::Zero(), "searching", notify_verifier);
   }
 
   void publishTargetStatus(uint8_t state, float confidence, int source_id,
-                           const Eigen::Vector3d &position, const std::string &text)
+                           const Eigen::Vector3d &position, const std::string &text,
+                           int verifier_id = 0)
   {
     coord_msgs::TargetStatus msg;
     msg.header.stamp = ros::Time::now();
@@ -398,6 +403,7 @@ private:
     msg.state = state;
     msg.confidence = confidence;
     msg.source_id = static_cast<uint8_t>(std::max(0, source_id));
+    msg.verifier_id = static_cast<uint8_t>(std::max(0, verifier_id));
     msg.estimated_position.x = position.x();
     msg.estimated_position.y = position.y();
     msg.estimated_position.z = position.z();
@@ -450,6 +456,24 @@ private:
     publishTargetStatus(target_state_, confidence, source_id, position, reason);
     publishTargetMarker(target_state_, source_id, position, confidence);
     halt("target confirmed by drone" + std::to_string(source_id));
+  }
+
+  int selectVerifier(int source_id, const Eigen::Vector3d &position) const
+  {
+    int best_id = 0;
+    double best_distance = std::numeric_limits<double>::max();
+    for (const auto &drone : drones_)
+    {
+      if (!drone.alive || drone.id == source_id)
+        continue;
+      const double distance = (drone.pos - position).norm();
+      if (distance < best_distance)
+      {
+        best_distance = distance;
+        best_id = drone.id;
+      }
+    }
+    return best_id;
   }
 
   void targetDetectionCallback(const coord_msgs::TargetDetectionConstPtr &msg)
@@ -541,16 +565,40 @@ private:
           msg->requires_verification || msg->confidence < static_cast<float>(target_high_confidence_)
               ? coord_msgs::TargetStatus::VERIFYING
               : coord_msgs::TargetStatus::CANDIDATE;
-      if (target_state_ != new_state)
+      const uint8_t previous_state = target_state_;
+      const int previous_verifier_id = target_verifier_id_;
+      int verifier_id = 0;
+      int status_source_id = source_index + 1;
+      if (new_state == coord_msgs::TargetStatus::VERIFYING)
+      {
+        const bool verifier_invalid =
+            target_verifier_id_ <= 0 || target_verifier_id_ > drone_num_ ||
+            !drones_[target_verifier_id_ - 1].alive ||
+            target_verifier_id_ == source_index + 1;
+        if (target_state_ != coord_msgs::TargetStatus::VERIFYING || verifier_invalid)
+        {
+          target_verification_source_id_ = source_index + 1;
+          target_verifier_id_ = selectVerifier(source_index + 1, target_position_);
+        }
+        verifier_id = target_verifier_id_;
+        status_source_id = target_verification_source_id_;
+      }
+      else
+      {
+        target_verification_source_id_ = 0;
+        target_verifier_id_ = 0;
+      }
+      if (previous_state != new_state || previous_verifier_id != verifier_id)
       {
         target_state_ = new_state;
-        publishTargetStatus(target_state_, target_confidence_, source_index + 1, target_position_,
+        publishTargetStatus(target_state_, target_confidence_, status_source_id, target_position_,
                             target_state_ == coord_msgs::TargetStatus::VERIFYING
-                                ? "candidate detected, waiting for confirmation"
-                                : "candidate detected, accumulating frames");
-        ROS_INFO("[target] state=%s source=drone%d confidence=%.2f",
+                                ? "candidate detected, verifier assigned"
+                                : "candidate detected, accumulating frames",
+                            verifier_id);
+        ROS_INFO("[target] state=%s source=drone%d verifier=drone%d confidence=%.2f",
                  target_state_ == coord_msgs::TargetStatus::VERIFYING ? "VERIFYING" : "CANDIDATE",
-                 source_index + 1, msg->confidence);
+                 status_source_id, verifier_id, msg->confidence);
       }
     }
   }
@@ -564,9 +612,8 @@ private:
     if ((now - last_target_detection_).toSec() <= target_verification_timeout_)
       return;
 
-    resetTargetSearch();
-    publishTargetStatus(coord_msgs::TargetStatus::SEARCHING, 0.0f, 0,
-                        Eigen::Vector3d::Zero(), "candidate expired, resume search");
+    const int old_verifier = target_verifier_id_;
+    resetTargetSearch(old_verifier);
     ROS_WARN("[coord] target candidate expired, resume frontier search");
   }
 

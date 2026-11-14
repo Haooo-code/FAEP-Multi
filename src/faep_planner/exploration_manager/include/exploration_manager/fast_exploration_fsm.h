@@ -16,6 +16,7 @@
 
 #include <coord_msgs/FrontierAssignment.h>
 #include <coord_msgs/FrontierSnapshot.h>
+#include <coord_msgs/TargetStatus.h>
 
 #include <active_perception/perception_utils.h>
 
@@ -180,14 +181,17 @@ public:
   bool halt_received_ = false;     // 是否收到协调器终止信号
   bool coord_wait_ = false;        // 是否处于"等待协调器分配"状态
   bool coord_recovery_resumed_ = false;  // 失联降级后是否已从 FINISH 恢复过一次
+  bool target_verification_resumed_ = false;  // 目标复核从 FINISH 恢复规划的标记
   ros::Time coord_wait_start_;     // 进入等待的时间（用于节流）
   ros::Time last_plan_time_;       // 规划最小间隔（OOM 修复：抑制高频重规划循环）
   ros::Time last_trim_time_;       // malloc_trim 节流（OOM 修复：定期回收 glibc 空闲堆）
   ros::Subscriber coord_asgn_sub_, coord_halt_sub_;
+  ros::Subscriber coord_target_status_sub_;
   ros::Publisher coord_snap_pub_;
   ros::Timer coord_snap_timer_;
   void coordAssignmentCallback(const coord_msgs::FrontierAssignmentConstPtr& msg);
   void coordHaltCallback(const std_msgs::BoolConstPtr& msg);
+  void coordTargetStatusCallback(const coord_msgs::TargetStatusConstPtr& msg);
   void coordSnapshotTimer(const ros::TimerEvent& e);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
