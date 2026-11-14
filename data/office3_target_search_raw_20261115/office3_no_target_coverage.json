@@ -1,0 +1,46 @@
+{
+  "map_pcd": "office3.pcd",
+  "grid_m": 1.0,
+  "radius_m": 1.0,
+  "status_coverage": {
+    "time_from_start_s": 91.81,
+    "free_cells": 410,
+    "drone_cells": {
+      "drone1": 119,
+      "drone2": 118,
+      "drone3": 150
+    },
+    "union_cells": 340,
+    "union_coverage_pct": 82.93,
+    "multi_cells": 47,
+    "multi_pct_of_union": 13.82,
+    "state": "NOT_FOUND",
+    "source_id": 0
+  },
+  "halt_coverage": {
+    "time_from_start_s": 91.82,
+    "free_cells": 410,
+    "drone_cells": {
+      "drone1": 119,
+      "drone2": 118,
+      "drone3": 150
+    },
+    "union_cells": 340,
+    "union_coverage_pct": 82.93,
+    "multi_cells": 47,
+    "multi_pct_of_union": 13.82
+  },
+  "current_coverage": {
+    "time_from_start_s": 93.02,
+    "free_cells": 410,
+    "drone_cells": {
+      "drone1": 119,
+      "drone2": 118,
+      "drone3": 150
+    },
+    "union_cells": 340,
+    "union_coverage_pct": 82.93,
+    "multi_cells": 47,
+    "multi_pct_of_union": 13.82
+  }
+}

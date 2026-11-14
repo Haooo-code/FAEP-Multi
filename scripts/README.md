@@ -43,7 +43,8 @@ bash scripts/trigger_multi.sh
 ```
 
 单场景自动回归使用 `target_search_regression.sh`。脚本会检查启动状态、三机
-HALT、目标状态日志，并保存最终 RViz 标记；设置
+HALT、目标状态日志，记录目标状态和 HALT 时的轨迹并集覆盖率，并保存最终
+RViz 标记；设置
 `TARGET_SEARCH_INJECT_INCONSISTENT=1` 时还会注入一条远离候选的假检测，
 用于验证位置一致性约束。
 
@@ -54,3 +55,7 @@ HALT、目标状态日志，并保存最终 RViz 标记；设置
 三级协同消融（L1 独立、L2 协调无分区、L3 扇区协同）的数据由
 `data/coordination_level_ablation_results_20261115.csv` 固化，配图使用
 `make_coordination_ablation_fig.py` 生成。
+
+跨场景目标搜索使用 `TARGET_SEARCH_MAP=office3` 切换地图；覆盖率记录节点为
+`target_coverage_logger.py`，汇总与成图由 `analyze_target_search_coverage.py`
+完成。

@@ -1,0 +1,46 @@
+{
+  "map_pcd": "office3.pcd",
+  "grid_m": 1.0,
+  "radius_m": 1.0,
+  "status_coverage": {
+    "time_from_start_s": 77.47,
+    "free_cells": 410,
+    "drone_cells": {
+      "drone1": 132,
+      "drone2": 128,
+      "drone3": 91
+    },
+    "union_cells": 292,
+    "union_coverage_pct": 71.22,
+    "multi_cells": 59,
+    "multi_pct_of_union": 20.21,
+    "state": "CONFIRMED",
+    "source_id": 3
+  },
+  "halt_coverage": {
+    "time_from_start_s": 77.46,
+    "free_cells": 410,
+    "drone_cells": {
+      "drone1": 132,
+      "drone2": 128,
+      "drone3": 91
+    },
+    "union_cells": 292,
+    "union_coverage_pct": 71.22,
+    "multi_cells": 59,
+    "multi_pct_of_union": 20.21
+  },
+  "current_coverage": {
+    "time_from_start_s": 78.47,
+    "free_cells": 410,
+    "drone_cells": {
+      "drone1": 135,
+      "drone2": 128,
+      "drone3": 92
+    },
+    "union_cells": 293,
+    "union_coverage_pct": 71.46,
+    "multi_cells": 62,
+    "multi_pct_of_union": 21.16
+  }
+}

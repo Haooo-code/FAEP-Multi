@@ -8,6 +8,7 @@ set -o pipefail
 SCENARIO=${1:?缺少场景名}
 EXPECTED=${2:?缺少期望结果 confirmed 或 not_found}
 shift 2
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 OUT_DIR=${TARGET_SEARCH_OUT_DIR:-/mnt/d/WSL/target_search_20261115}
 MAX_WAIT=${TARGET_SEARCH_MAX_WAIT:-210}
@@ -18,16 +19,41 @@ FIRST_MARKER_LOG="$OUT_DIR/${SCENARIO}_first_marker.yaml"
 TRACK_LOG="$OUT_DIR/${SCENARIO}_track.csv"
 ROSOUT_LOG="$OUT_DIR/${SCENARIO}_rosout.log"
 SUMMARY_FILE="$OUT_DIR/target_search_regression.tsv"
+COVERAGE_LOG="$OUT_DIR/${SCENARIO}_coverage.json"
 
-MAP_FILE=/home/ubuntu/catkin_ws/src/faep/uav_simulator/map_generator/resource/office2.pcd
+MAP_NAME=${TARGET_SEARCH_MAP:-office2}
+case "$MAP_NAME" in
+  office2)
+    MAP_FILE=/home/ubuntu/catkin_ws/src/faep/uav_simulator/map_generator/resource/office2.pcd
+    MAP_SIZE=42
+    BX0=-10.4; BY0=-9.9; BZ0=-0.1
+    BX1=10.4; BY1=9.9; BZ1=2.0
+    D1X=-7.5; D1Y=-3.5; D1Z=1.0
+    D2X=4.5; D2Y=-3.5; D2Z=1.4
+    D3X=-3.5; D3Y=6.5; D3Z=1.8
+    ;;
+  office3)
+    MAP_FILE=/home/ubuntu/catkin_ws/src/faep/uav_simulator/map_generator/resource/office3.pcd
+    MAP_SIZE=44
+    BX0=-9.6; BY0=-14.2; BZ0=-0.1
+    BX1=10.0; BY1=14.4; BZ1=2.0
+    D1X=-3.2; D1Y=10.2; D1Z=1.0
+    D2X=-3.2; D2Y=2.2; D2Z=1.4
+    D3X=-3.2; D3Y=-5.8; D3Z=1.8
+    ;;
+  *)
+    echo "Unsupported TARGET_SEARCH_MAP=$MAP_NAME" >&2
+    exit 2
+    ;;
+esac
 
 mkdir -p "$OUT_DIR"
 source /opt/ros/noetic/setup.bash
 source /home/ubuntu/catkin_ws/devel/setup.bash
 
 cleanup() {
-  kill "${INJECT_PID:-}" "${FIRST_MARKER_PID:-}" "${STATUS_PID:-}" "${TRACK_PID:-}" "${LAUNCH_PID:-}" 2>/dev/null || true
-  wait "${INJECT_PID:-}" "${FIRST_MARKER_PID:-}" "${STATUS_PID:-}" "${TRACK_PID:-}" "${LAUNCH_PID:-}" 2>/dev/null || true
+  kill "${INJECT_PID:-}" "${COVERAGE_PID:-}" "${FIRST_MARKER_PID:-}" "${STATUS_PID:-}" "${TRACK_PID:-}" "${LAUNCH_PID:-}" 2>/dev/null || true
+  wait "${INJECT_PID:-}" "${COVERAGE_PID:-}" "${FIRST_MARKER_PID:-}" "${STATUS_PID:-}" "${TRACK_PID:-}" "${LAUNCH_PID:-}" 2>/dev/null || true
   sleep 1
   bash /mnt/d/WSL/force_clean2.sh >/dev/null 2>&1 || true
 }
@@ -38,12 +64,12 @@ sleep 2
 
 roslaunch exploration_manager multi_bringup.launch \
   use_coord:=true partition_mode:=true \
-  map_file:="$MAP_FILE" map_size_x:=42 map_size_y:=42 map_size_z:=10.0 \
-  box_x_min:=-10.4 box_y_min:=-9.9 box_z_min:=-0.1 \
-  box_x_max:=10.4 box_y_max:=9.9 box_z_max:=2.0 \
-  d1_x:=-7.5 d1_y:=-3.5 d1_z:=1.0 \
-  d2_x:=4.5 d2_y:=-3.5 d2_z:=1.4 \
-  d3_x:=-3.5 d3_y:=6.5 d3_z:=1.8 \
+  map_file:="$MAP_FILE" map_size_x:="$MAP_SIZE" map_size_y:="$MAP_SIZE" map_size_z:=10.0 \
+  box_x_min:="$BX0" box_y_min:="$BY0" box_z_min:="$BZ0" \
+  box_x_max:="$BX1" box_y_max:="$BY1" box_z_max:="$BZ1" \
+  d1_x:="$D1X" d1_y:="$D1Y" d1_z:="$D1Z" \
+  d2_x:="$D2X" d2_y:="$D2Y" d2_z:="$D2Z" \
+  d3_x:="$D3X" d3_y:="$D3Y" d3_z:="$D3Z" \
   target_search_enabled:=true "$@" >"$LOG" 2>&1 &
 LAUNCH_PID=$!
 
@@ -72,6 +98,10 @@ else
   TRACK_PID=$!
   rostopic echo -p /target/status >"$STATUS_LOG" 2>&1 &
   STATUS_PID=$!
+  python3 "$SCRIPT_DIR/target_coverage_logger.py" \
+    --output "$COVERAGE_LOG" --pcd "$MAP_FILE" \
+    >"$OUT_DIR/${SCENARIO}_coverage_node.log" 2>&1 &
+  COVERAGE_PID=$!
   sleep 8
   rostopic echo -n 1 /target/marker >"$FIRST_MARKER_LOG" 2>&1 &
   FIRST_MARKER_PID=$!
@@ -128,6 +158,7 @@ else
   WALL_S=$(( $(date +%s) - START_S ))
 fi
 
+sleep 3
 timeout 5 rostopic echo -n 1 /target/marker >"$MARKER_LOG" 2>&1 || true
 SESS=$(find /home/ubuntu/.ros/log -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null |
   sort -nr | head -1 | cut -d' ' -f2-)
@@ -141,6 +172,28 @@ STATE_LINES=$(grep -a "\[target\] state=" "$LOG" | sed 's/.*\[target\] //' |
   paste -sd' | ' -)
 INCONSISTENT_COUNT=$(grep -ac "ignored inconsistent detection" "$LOG" 2>/dev/null | tail -1)
 INJECT_REQUESTED=${TARGET_SEARCH_INJECT_INCONSISTENT:-0}
+STATUS_COVERAGE=$(python3 - "$COVERAGE_LOG" <<'PY'
+import json
+import sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+    value = (data.get("status_coverage") or {}).get("union_coverage_pct", "")
+    print(value)
+except Exception:
+    print("")
+PY
+)
+FINAL_COVERAGE=$(python3 - "$COVERAGE_LOG" <<'PY'
+import json
+import sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+    value = (data.get("halt_coverage") or {}).get("union_coverage_pct", "")
+    print(value)
+except Exception:
+    print("")
+PY
+)
 HALT_COUNT=$(grep -ac "HALT received" "$LOG" 2>/dev/null | tail -1)
 FLIGHT_TIMES=$(grep -a "Flight_time" "$LOG" |
   grep -aoE "\[Flight_time\]: [0-9.]+ \(drone [0-9]\)" | sort -u | paste -sd' | ' -)
@@ -153,10 +206,10 @@ FIRST_MARKER_X=$(awk '/^scale:/{in_scale=1; next} in_scale && /^  x:/{print $2; 
 FIRST_MARKER_R=$(awk '/^color:/{in_color=1; next} in_color && /^  r:/{print $2; exit}' "$FIRST_MARKER_LOG")
 FIRST_MARKER_G=$(awk '/^color:/{in_color=1; next} in_color && /^  g:/{print $2; exit}' "$FIRST_MARKER_LOG")
 
-printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
   "$SCENARIO" "$EXPECTED" "$RESULT" "$WALL_S" "$HALT_COUNT" \
   "$CONFIRM_LINE" "$NOT_FOUND_LINE" "$VERIFIER_LINES" "$STATE_LINES" \
-  "$INCONSISTENT_COUNT" "$FLIGHT_TIMES" >>"$SUMMARY_FILE"
+  "$INCONSISTENT_COUNT" "$FLIGHT_TIMES" "$STATUS_COVERAGE" "$FINAL_COVERAGE" >>"$SUMMARY_FILE"
 
 {
   echo "scenario=$SCENARIO"
@@ -174,6 +227,8 @@ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
   echo "first_marker_color_g=$FIRST_MARKER_G"
   echo "inconsistent_detections=$INCONSISTENT_COUNT"
   echo "inconsistent_injection_requested=$INJECT_REQUESTED"
+  echo "coverage_at_status_pct=$STATUS_COVERAGE"
+  echo "coverage_at_halt_pct=$FINAL_COVERAGE"
   echo "confirm=$CONFIRM_LINE"
   echo "not_found=$NOT_FOUND_LINE"
   echo "verifier_assignments=$VERIFIER_LINES"

@@ -1,0 +1,22 @@
+scenario=office3_target_continue
+expected=halt_only
+result=full_coverage
+wall_s=110
+halt_count=3
+marker_type=3
+marker_scale_x=0.5
+marker_color_r=0.10000000149011612
+marker_color_g=0.8999999761581421
+first_marker_type=2
+first_marker_scale_x=0.35
+first_marker_color_r=1.0
+first_marker_color_g=0.75
+inconsistent_detections=0
+inconsistent_injection_requested=0
+coverage_at_status_pct=68.54
+coverage_at_halt_pct=81.46
+confirm=[33m[WARN] [1794683089.051512300]: [target] CONFIRMED source=drone3 confidence=0.82 position=(6.95, -9.99, 0.98) reason=single-drone multi-frame confirmation[0m
+not_found=
+verifier_assignments=drone2 assigned to verify candidate from drone3[0m
+state_transitions=state=VERIFYING source=drone3 verifier=drone2 confidence=0.71[0m
+flight_times=[Flight_time]: 103.717 (drone 2) [Flight_time]: 108.637 (drone 1)|[Flight_time]: 98.7216 (drone 3)
