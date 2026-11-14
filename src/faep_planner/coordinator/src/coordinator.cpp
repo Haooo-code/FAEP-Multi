@@ -117,7 +117,9 @@ public:
     nh_.param("target/low_confidence", target_low_confidence_, 0.45);
     nh_.param("target/verification_sources", target_verification_sources_, 2);
     nh_.param("target/verification_timeout", target_verification_timeout_, 10.0);
+    nh_.param("target/verifier_switch_timeout", target_verifier_switch_timeout_, 10.0);
     nh_.param("target/detection_timeout", target_detection_timeout_, 1.0);
+    nh_.param("target/position_tolerance", target_position_tolerance_, 1.5);
 
     drones_.resize(drone_num_);
     sub_snap_.resize(drone_num_);
@@ -215,7 +217,9 @@ private:
   double target_high_confidence_ = 0.80;
   double target_low_confidence_ = 0.45;
   double target_verification_timeout_ = 10.0;
+  double target_verifier_switch_timeout_ = 10.0;
   double target_detection_timeout_ = 1.0;
+  double target_position_tolerance_ = 1.5;
   std::vector<std::deque<TargetSample> > target_samples_;
   uint8_t target_state_ = coord_msgs::TargetStatus::SEARCHING;
   bool target_confirmed_ = false;
@@ -225,6 +229,7 @@ private:
   int target_source_id_ = 0;
   int target_verifier_id_ = 0;
   int target_verification_source_id_ = 0;
+  ros::Time target_verifier_assigned_at_;
 
   // 分区是否仍按扇区执行（失联后自动降级）
   bool partitionActive() const
@@ -386,6 +391,7 @@ private:
     target_confidence_ = 0.0f;
     target_source_id_ = 0;
     target_verification_source_id_ = 0;
+    target_verifier_assigned_at_ = ros::Time();
     for (size_t i = 0; i < target_samples_.size(); ++i)
       target_samples_[i].clear();
     if (pub_target_status_)
@@ -458,13 +464,14 @@ private:
     halt("target confirmed by drone" + std::to_string(source_id));
   }
 
-  int selectVerifier(int source_id, const Eigen::Vector3d &position) const
+  int selectVerifier(int source_id, const Eigen::Vector3d &position,
+                     int excluded_id = 0) const
   {
     int best_id = 0;
     double best_distance = std::numeric_limits<double>::max();
     for (const auto &drone : drones_)
     {
-      if (!drone.alive || drone.id == source_id)
+      if (!drone.alive || drone.id == source_id || drone.id == excluded_id)
         continue;
       const double distance = (drone.pos - position).norm();
       if (distance < best_distance)
@@ -480,6 +487,10 @@ private:
   {
     if (!target_search_enabled_ || halted_ || target_confirmed_)
       return;
+    // 任务未真正开始前不接收检测。否则飞机尚在 WAIT_TRIGGER 时可能先看到目标，
+    // 协调器也还没有完整的在线飞机列表，容易产生无效复核机编号和启动期误确认。
+    if (!any_drone_ever_explored_)
+      return;
     if (msg->source_id == 0 || msg->source_id > drone_num_)
       return;
 
@@ -490,6 +501,14 @@ private:
 
     const int source_index = static_cast<int>(msg->source_id) - 1;
     const Eigen::Vector3d detected(msg->position.x, msg->position.y, msg->position.z);
+    if (target_state_ != coord_msgs::TargetStatus::SEARCHING &&
+        (detected - target_position_).norm() > target_position_tolerance_)
+    {
+      ROS_WARN_THROTTLE(2.0,
+                        "[target] ignored inconsistent detection: %.2fm from current candidate",
+                        (detected - target_position_).norm());
+      return;
+    }
     std::deque<TargetSample> &source_samples = target_samples_[source_index];
     while (!source_samples.empty() &&
            (now - source_samples.front().stamp).toSec() > target_verification_timeout_)
@@ -571,22 +590,35 @@ private:
       int status_source_id = source_index + 1;
       if (new_state == coord_msgs::TargetStatus::VERIFYING)
       {
+        // 候选机和复核机角色在复核窗口内保持稳定。复核机主动看到目标时，
+        // 该检测正是所需证据，不能因此把两架飞机的角色对调。
+        int candidate_source_id = target_verification_source_id_;
+        const bool candidate_source_invalid =
+            candidate_source_id <= 0 || candidate_source_id > drone_num_ ||
+            !drones_[candidate_source_id - 1].alive;
+        if (target_state_ != coord_msgs::TargetStatus::VERIFYING ||
+            candidate_source_invalid)
+        {
+          candidate_source_id = source_index + 1;
+          target_verification_source_id_ = candidate_source_id;
+        }
         const bool verifier_invalid =
             target_verifier_id_ <= 0 || target_verifier_id_ > drone_num_ ||
             !drones_[target_verifier_id_ - 1].alive ||
-            target_verifier_id_ == source_index + 1;
+            target_verifier_id_ == candidate_source_id;
         if (target_state_ != coord_msgs::TargetStatus::VERIFYING || verifier_invalid)
         {
-          target_verification_source_id_ = source_index + 1;
-          target_verifier_id_ = selectVerifier(source_index + 1, target_position_);
+          target_verifier_id_ = selectVerifier(candidate_source_id, target_position_);
+          target_verifier_assigned_at_ = now;
         }
         verifier_id = target_verifier_id_;
-        status_source_id = target_verification_source_id_;
+        status_source_id = candidate_source_id;
       }
       else
       {
         target_verification_source_id_ = 0;
         target_verifier_id_ = 0;
+        target_verifier_assigned_at_ = ros::Time();
       }
       if (previous_state != new_state || previous_verifier_id != verifier_id)
       {
@@ -601,6 +633,41 @@ private:
                  status_source_id, verifier_id, msg->confidence);
       }
     }
+  }
+
+  void updateTargetVerifier(const ros::Time &now)
+  {
+    if (!target_search_enabled_ || target_confirmed_ ||
+        target_state_ != coord_msgs::TargetStatus::VERIFYING ||
+        target_verifier_id_ <= 0 || target_verifier_id_ > drone_num_ ||
+        target_verification_source_id_ <= 0 ||
+        target_verification_source_id_ > drone_num_)
+      return;
+
+    // 复核机已经有视觉证据时不换人；完全没有进展超过阈值才转交另一架飞机。
+    if (!target_samples_[target_verifier_id_ - 1].empty())
+      return;
+    if (target_verifier_assigned_at_.isZero())
+    {
+      target_verifier_assigned_at_ = now;
+      return;
+    }
+    if ((now - target_verifier_assigned_at_).toSec() < target_verifier_switch_timeout_)
+      return;
+
+    const int old_verifier = target_verifier_id_;
+    const int new_verifier =
+        selectVerifier(target_verification_source_id_, target_position_, old_verifier);
+    if (new_verifier <= 0 || new_verifier == old_verifier)
+      return;
+
+    target_verifier_id_ = new_verifier;
+    target_verifier_assigned_at_ = now;
+    publishTargetStatus(target_state_, target_confidence_, target_verification_source_id_,
+                        target_position_, "verifier switched after no visual progress",
+                        target_verifier_id_);
+    ROS_WARN("[target] verifier no progress for %.1fs: drone%d -> drone%d",
+             target_verifier_switch_timeout_, old_verifier, new_verifier);
   }
 
   void updateTargetTimeout(const ros::Time &now)
@@ -651,6 +718,7 @@ private:
     if (halted_)
       return;
     ros::Time now = ros::Time::now();
+    updateTargetVerifier(now);
     updateTargetTimeout(now);
     initSectorsIfNeeded(now);
 

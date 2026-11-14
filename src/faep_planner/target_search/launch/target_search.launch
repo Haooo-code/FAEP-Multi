@@ -7,6 +7,7 @@
   <arg name="max_range" default="7.0"/>
   <arg name="base_detection_probability" default="0.92"/>
   <arg name="position_noise" default="0.08"/>
+  <arg name="confidence_noise" default="0.03"/>
   <arg name="verification_confidence" default="0.80"/>
   <arg name="fx" default="387.229248046875"/>
   <arg name="fy" default="387.229248046875"/>
@@ -30,6 +31,7 @@
       <param name="sensing/max_range" value="$(arg max_range)"/>
       <param name="sensing/base_detection_probability" value="$(arg base_detection_probability)"/>
       <param name="sensing/position_noise" value="$(arg position_noise)"/>
+      <param name="sensing/confidence_noise" value="$(arg confidence_noise)"/>
       <param name="sensing/verification_confidence" value="$(arg verification_confidence)"/>
     </node>
   </group>
@@ -51,6 +53,7 @@
       <param name="sensing/max_range" value="$(arg max_range)"/>
       <param name="sensing/base_detection_probability" value="$(arg base_detection_probability)"/>
       <param name="sensing/position_noise" value="$(arg position_noise)"/>
+      <param name="sensing/confidence_noise" value="$(arg confidence_noise)"/>
       <param name="sensing/verification_confidence" value="$(arg verification_confidence)"/>
     </node>
   </group>
@@ -72,6 +75,7 @@
       <param name="sensing/max_range" value="$(arg max_range)"/>
       <param name="sensing/base_detection_probability" value="$(arg base_detection_probability)"/>
       <param name="sensing/position_noise" value="$(arg position_noise)"/>
+      <param name="sensing/confidence_noise" value="$(arg confidence_noise)"/>
       <param name="sensing/verification_confidence" value="$(arg verification_confidence)"/>
     </node>
   </group>

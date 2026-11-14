@@ -41,3 +41,8 @@ roslaunch exploration_manager multi_bringup.launch use_coord:=true partition_mod
 roslaunch exploration_manager target_search_rviz.launch
 bash scripts/trigger_multi.sh
 ```
+
+单场景自动回归使用 `target_search_regression.sh`。脚本会检查启动状态、三机
+HALT、目标状态日志，并保存最终 RViz 标记；设置
+`TARGET_SEARCH_INJECT_INCONSISTENT=1` 时还会注入一条远离候选的假检测，
+用于验证位置一致性约束。

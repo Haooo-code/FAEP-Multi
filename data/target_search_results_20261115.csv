@@ -1,0 +1,10 @@
+date,scenario,target_xy,prior_xy,target_present,detection_probability,high_confidence,run,wall_s,result,confirmation_source,reason,all_three_halt,notes
+2026-11-15,center_high_confidence,"(1.0, 3.0)","(1.0, 3.0)",true,0.92,0.80,1,20,confirmed,drone3,single-drone multi-frame confirmation,3,candidate sphere type=2 and confirmed cylinder type=3 also verified
+2026-11-15,center_low_detection,"(1.0, 3.0)","(1.0, 3.0)",true,0.60,0.80,1,22,confirmed,drone3,single-drone multi-frame confirmation,3,detection probability lowered to 0.60
+2026-11-15,wrong_prior_west,"(5.0, 5.0)","(-5.0, 5.0)",true,0.80,0.80,1,23,confirmed,drone3,second-drone cross-view confirmation,3,7 automatic global-fallback decisions
+2026-11-15,strict_cross_view,"(1.0, 3.0)","(1.0, 3.0)",true,0.92,1.00,1,41,confirmed,drone2,second-drone cross-view confirmation,3,high threshold 1.0 makes single-drone confirmation impossible
+2026-11-15,strict_cross_view,"(1.0, 3.0)","(1.0, 3.0)",true,0.92,1.00,2,35,confirmed,drone1,second-drone cross-view confirmation,3,high threshold 1.0 makes single-drone confirmation impossible
+2026-11-15,strict_cross_view,"(1.0, 3.0)","(1.0, 3.0)",true,0.92,1.00,3,29,confirmed,drone1,second-drone cross-view confirmation,3,high threshold 1.0 makes single-drone confirmation impossible
+2026-11-15,inconsistent_detection_guard,"(1.0, 3.0)","(1.0, 3.0)",true,0.92,1.00,1,48,confirmed,drone1,second-drone cross-view confirmation,3,injected fake high-confidence detection at (-5,-5) rejected at 9.99m
+2026-11-15,no_target,"(1.0, 3.0)","(1.0, 3.0)",false,0.92,0.80,1,92,not_found,none,all drones idle after full exploration,3,no candidate marker and no premature stop
+2026-11-15,target_search_disabled,"(1.0, 3.0)","(1.0, 3.0)",false,0.92,0.80,1,74,full_coverage,none,normal cooperative exploration,3,regression run with target search disabled

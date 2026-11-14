@@ -47,12 +47,17 @@
   <arg name="target_prior_growth" default="0.12"/>
   <arg name="target_prior_max_radius" default="10.0"/>
   <arg name="target_sensor_max_range" default="7.0"/>
+  <arg name="target_detection_probability" default="0.92"/>
+  <arg name="target_position_noise" default="0.08"/>
+  <arg name="target_confidence_noise" default="0.03"/>
   <arg name="target_confirm_frames" default="3"/>
   <arg name="target_confirm_window" default="2.5"/>
   <arg name="target_high_confidence" default="0.80"/>
   <arg name="target_low_confidence" default="0.45"/>
   <arg name="target_verification_sources" default="2"/>
   <arg name="target_verification_timeout" default="20.0"/>
+  <arg name="target_verifier_switch_timeout" default="10.0"/>
+  <arg name="target_position_tolerance" default="1.5"/>
 
   <!-- 中央协调器（仅 use_coord=true 时启动） -->
   <node pkg="coordinator" type="faep_coordinator" name="faep_coordinator" output="screen" if="$(arg use_coord)">
@@ -81,7 +86,9 @@
     <param name="target/low_confidence" value="$(arg target_low_confidence)"/>
     <param name="target/verification_sources" value="$(arg target_verification_sources)"/>
     <param name="target/verification_timeout" value="$(arg target_verification_timeout)"/>
+    <param name="target/verifier_switch_timeout" value="$(arg target_verifier_switch_timeout)"/>
     <param name="target/detection_timeout" value="1.0"/>
+    <param name="target/position_tolerance" value="$(arg target_position_tolerance)"/>
   </node>
 
   <!-- 1 号机算法 -->
@@ -196,6 +203,9 @@
       <arg name="target_y" value="$(arg target_y)"/>
       <arg name="target_z" value="$(arg target_z)"/>
       <arg name="max_range" value="$(arg target_sensor_max_range)"/>
+      <arg name="base_detection_probability" value="$(arg target_detection_probability)"/>
+      <arg name="position_noise" value="$(arg target_position_noise)"/>
+      <arg name="confidence_noise" value="$(arg target_confidence_noise)"/>
     </include>
   </group>
 
