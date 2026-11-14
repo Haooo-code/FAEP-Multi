@@ -44,6 +44,7 @@
   <!-- 多机协调开关（false=纯独立探索，用于 B 组对照；true=接受协调器任务分配） -->
   <arg name="use_coord" default="false"/>
   <arg name="target_search_enabled" default="false"/>
+  <arg name="target_prior_enabled" default="true"/>
   <arg name="target_prior_x" default="5.0"/>
   <arg name="target_prior_y" default="5.0"/>
   <arg name="target_prior_z" default="1.0"/>
@@ -164,6 +165,7 @@
     <!-- 抖动防护：跳过与当前位置距离小于该值的探索目标（多机实验启用；单机基线保持 0=关闭） -->
     <param name="exploration/min_target_dist" value="2.5" type="double"/>
     <param name="exploration/target_search_enabled" value="$(arg target_search_enabled)"/>
+    <param name="exploration/target_prior_enabled" value="$(arg target_prior_enabled)"/>
     <param name="exploration/target_prior_x" value="$(arg target_prior_x)"/>
     <param name="exploration/target_prior_y" value="$(arg target_prior_y)"/>
     <param name="exploration/target_prior_z" value="$(arg target_prior_z)"/>

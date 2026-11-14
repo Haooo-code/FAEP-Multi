@@ -46,3 +46,7 @@ bash scripts/trigger_multi.sh
 HALT、目标状态日志，并保存最终 RViz 标记；设置
 `TARGET_SEARCH_INJECT_INCONSISTENT=1` 时还会注入一条远离候选的假检测，
 用于验证位置一致性约束。
+
+目标搜索组件消融使用 `run_target_search_ablation_suite.sh`；目标先验在东侧
+场景的专项对照使用 `run_target_prior_ablation.sh`，汇总和成图由
+`analyze_target_search_ablation.py` 完成。

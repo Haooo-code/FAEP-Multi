@@ -1,0 +1,28 @@
+config,label,condition,target,run,log_name,wall_s,result,halt_count,confirm_source,confirm_position,confirm_reason,confirm_to_halt_s,prioritize_count,global_fallback_count,verifier_switch_count,detection_count,verification_state_count
+full,完整方案,先验开 / 3帧 / 换人开 / 确认停止,"(1,3)",1,ablation_full_pilot,27,confirmed,3,drone3,"(1.03, 2.99, 0.98)",single-drone multi-frame confirmation,0.00,4,11,1,19,1
+full,完整方案,先验开 / 3帧 / 换人开 / 确认停止,"(1,3)",2,ablation_full_1,18,confirmed,3,drone3,"(1.03, 2.96, 0.97)",single-drone multi-frame confirmation,0.00,0,5,0,15,1
+full,完整方案,先验开 / 3帧 / 换人开 / 确认停止,"(1,3)",3,ablation_full_2,20,confirmed,3,drone3,"(1.04, 2.98, 0.97)",single-drone multi-frame confirmation,0.00,0,6,0,16,1
+prior_on_east,目标先验开,"目标(5,5)，先验(5,5)","(5,5)",1,ablation_prior_on_east_1,34,confirmed,3,drone2,"(4.95, 5.02, 1.00)",second-drone cross-view confirmation,0.00,0,20,0,3,1
+prior_on_east,目标先验开,"目标(5,5)，先验(5,5)","(5,5)",2,ablation_prior_on_east_2,39,confirmed,3,drone3,"(4.95, 5.06, 1.00)",second-drone cross-view confirmation,0.00,2,19,0,5,1
+prior_on_east,目标先验开,"目标(5,5)，先验(5,5)","(5,5)",3,ablation_prior_on_east_3,45,confirmed,3,drone2,"(4.95, 5.01, 1.00)",second-drone cross-view confirmation,0.00,1,28,0,4,1
+prior_off_east,目标先验关,"目标(5,5)，不使用先验","(5,5)",1,ablation_prior_off_east_1,52,confirmed,3,drone3,"(4.98, 5.06, 0.99)",second-drone cross-view confirmation,0.00,1,3,0,6,2
+prior_off_east,目标先验关,"目标(5,5)，不使用先验","(5,5)",2,ablation_prior_off_east_2,38,confirmed,3,drone2,"(4.99, 5.04, 0.96)",second-drone cross-view confirmation,0.00,1,3,0,6,1
+prior_off_east,目标先验关,"目标(5,5)，不使用先验","(5,5)",3,ablation_prior_off_east_3,58,confirmed,3,drone2,"(4.98, 4.97, 0.98)",single-drone multi-frame confirmation,0.00,4,9,2,7,1
+handoff_on,无进展换人开,高阈值1.0，换人时限10s,"(1,3)",1,ablation_with_handoff_strict_pilot,28,confirmed,3,drone1,"(1.03, 2.99, 0.99)",second-drone cross-view confirmation,0.00,4,12,1,20,1
+handoff_on,无进展换人开,高阈值1.0，换人时限10s,"(1,3)",2,ablation_with_handoff_strict_1,32,confirmed,3,drone1,"(1.00, 3.00, 1.00)",second-drone cross-view confirmation,0.00,4,15,1,21,1
+handoff_on,无进展换人开,高阈值1.0，换人时限10s,"(1,3)",3,ablation_with_handoff_strict_2,60,confirmed,3,drone2,"(1.02, 3.00, 1.02)",second-drone cross-view confirmation,0.00,12,32,4,26,1
+handoff_off,无进展换人关,高阈值1.0，换人时限999s,"(1,3)",1,ablation_no_handoff_pilot,49,confirmed,3,drone2,"(1.00, 3.00, 1.01)",second-drone cross-view confirmation,0.00,5,23,0,22,1
+handoff_off,无进展换人关,高阈值1.0，换人时限999s,"(1,3)",2,ablation_no_handoff_1,61,confirmed,3,drone2,"(1.02, 2.98, 1.03)",second-drone cross-view confirmation,0.00,9,27,0,23,1
+handoff_off,无进展换人关,高阈值1.0，换人时限999s,"(1,3)",3,ablation_no_handoff_2,42,confirmed,3,drone2,"(1.01, 3.00, 1.01)",second-drone cross-view confirmation,0.00,6,20,0,21,1
+confirm_3frame,3帧确认,多帧门槛开启,"(1,3)",1,ablation_full_pilot,27,confirmed,3,drone3,"(1.03, 2.99, 0.98)",single-drone multi-frame confirmation,0.00,4,11,1,19,1
+confirm_3frame,3帧确认,多帧门槛开启,"(1,3)",2,ablation_full_1,18,confirmed,3,drone3,"(1.03, 2.96, 0.97)",single-drone multi-frame confirmation,0.00,0,5,0,15,1
+confirm_3frame,3帧确认,多帧门槛开启,"(1,3)",3,ablation_full_2,20,confirmed,3,drone3,"(1.04, 2.98, 0.97)",single-drone multi-frame confirmation,0.00,0,6,0,16,1
+confirm_1frame,单帧确认,多帧门槛关闭,"(1,3)",1,ablation_single_frame_pilot_new,15,confirmed,3,drone3,"(0.93, 2.76, 1.01)",single-frame confirmation,0.00,0,1,0,17,0
+confirm_1frame,单帧确认,多帧门槛关闭,"(1,3)",2,ablation_single_frame_1,16,confirmed,3,drone3,"(1.07, 3.05, 0.88)",single-frame confirmation,0.00,0,1,0,17,0
+confirm_1frame,单帧确认,多帧门槛关闭,"(1,3)",3,ablation_single_frame_2,16,confirmed,3,drone3,"(1.07, 3.05, 0.88)",single-frame confirmation,0.00,0,1,0,17,0
+stop_on,确认后停止,stop_on_confirm=true,"(1,3)",1,ablation_full_pilot,27,confirmed,3,drone3,"(1.03, 2.99, 0.98)",single-drone multi-frame confirmation,0.00,4,11,1,19,1
+stop_on,确认后停止,stop_on_confirm=true,"(1,3)",2,ablation_full_1,18,confirmed,3,drone3,"(1.03, 2.96, 0.97)",single-drone multi-frame confirmation,0.00,0,5,0,15,1
+stop_on,确认后停止,stop_on_confirm=true,"(1,3)",3,ablation_full_2,20,confirmed,3,drone3,"(1.04, 2.98, 0.97)",single-drone multi-frame confirmation,0.00,0,6,0,16,1
+stop_off,确认后继续,stop_on_confirm=false,"(1,3)",1,ablation_no_stop_pilot,92,full_coverage,3,drone3,"(1.01, 3.02, 0.97)",single-drone multi-frame confirmation,71.48,14,33,1,27,1
+stop_off,确认后继续,stop_on_confirm=false,"(1,3)",2,ablation_no_stop_1,85,full_coverage,3,drone3,"(1.02, 2.99, 1.00)",single-drone multi-frame confirmation,63.04,11,38,1,24,1
+stop_off,确认后继续,stop_on_confirm=false,"(1,3)",3,ablation_no_stop_2,108,full_coverage,3,drone3,"(1.03, 2.96, 0.98)",single-drone multi-frame confirmation,89.47,18,37,0,25,1

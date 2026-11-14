@@ -62,6 +62,7 @@ namespace fast_planner
     nh.param("exploration/relax_time", ep_->relax_time_, 1.0);
     nh.param("exploration/min_target_dist", min_target_dist_, 0.0);
     nh.param("exploration/target_search_enabled", target_search_enabled_, false);
+    nh.param("exploration/target_prior_enabled", target_prior_enabled_, true);
     nh.param("exploration/target_prior_x", target_prior_center_.x(), 0.0);
     nh.param("exploration/target_prior_y", target_prior_center_.y(), 0.0);
     nh.param("exploration/target_prior_z", target_prior_center_.z(), 1.0);
@@ -349,7 +350,8 @@ namespace fast_planner
 
         // 目标先验只影响候选顺序，不删除全局探索能力：
         // 先验半径内存在前沿时优先探索；半径内没有前沿时自动回退到全局前沿。
-        if (target_search_enabled_ && !filtered.empty())
+        if ((verification_active_ || (target_search_enabled_ && target_prior_enabled_)) &&
+            !filtered.empty())
         {
           const Eigen::Vector3d priority_center =
               verification_active_ ? verification_center_ : target_prior_center_;

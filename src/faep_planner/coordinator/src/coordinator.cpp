@@ -111,6 +111,7 @@ public:
 
     // v3.0：目标触发式探索。默认为关闭，保证既有 A/B/C 实验行为不变。
     nh_.param("target_search_enabled", target_search_enabled_, false);
+    nh_.param("target/stop_on_confirm", target_stop_on_confirm_, true);
     nh_.param("target/confirm_frames", target_confirm_frames_, 3);
     nh_.param("target/confirm_window", target_confirm_window_, 2.0);
     nh_.param("target/high_confidence", target_high_confidence_, 0.80);
@@ -211,6 +212,7 @@ private:
 
   // v3.0 目标搜索状态
   bool target_search_enabled_ = false;
+  bool target_stop_on_confirm_ = true;
   int target_confirm_frames_ = 3;
   int target_verification_sources_ = 2;
   double target_confirm_window_ = 2.0;
@@ -461,7 +463,10 @@ private:
              source_id, confidence, position.x(), position.y(), position.z(), reason.c_str());
     publishTargetStatus(target_state_, confidence, source_id, position, reason);
     publishTargetMarker(target_state_, source_id, position, confidence);
-    halt("target confirmed by drone" + std::to_string(source_id));
+    if (target_stop_on_confirm_)
+      halt("target confirmed by drone" + std::to_string(source_id));
+    else
+      ROS_WARN("[target] stop-on-confirm disabled for ablation; continue exploration");
   }
 
   int selectVerifier(int source_id, const Eigen::Vector3d &position,
@@ -571,9 +576,12 @@ private:
 
     if (enough_single_source_frames || enough_cross_source_evidence)
     {
+      const std::string single_source_reason =
+          target_confirm_frames_ > 1 ? "single-drone multi-frame confirmation"
+                                     : "single-frame confirmation";
       confirmTarget(source_index + 1, target_position_, target_confidence_,
                     enough_single_source_frames
-                        ? "single-drone multi-frame confirmation"
+                        ? single_source_reason
                         : "second-drone cross-view confirmation");
       return;
     }

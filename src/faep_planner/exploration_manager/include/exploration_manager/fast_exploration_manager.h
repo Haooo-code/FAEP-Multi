@@ -83,6 +83,7 @@ private:
 
   // v3.0：目标先验。目标精确位置未知，只使用大致的先验中心并随时间逐步扩大搜索半径。
   bool target_search_enabled_ = false;
+  bool target_prior_enabled_ = true;
   Vector3d target_prior_center_ = Vector3d::Zero();
   double target_prior_radius_ = 3.0;
   double target_prior_growth_ = 0.12;

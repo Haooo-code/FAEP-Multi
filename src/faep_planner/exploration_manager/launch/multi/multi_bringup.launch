@@ -34,6 +34,8 @@
 
   <!-- v3.0 目标搜索：默认关闭；开启后目标精确位置只用于模拟感知，不作为规划输入 -->
   <arg name="target_search_enabled" default="false"/>
+  <!-- 消融开关：正式运行保持 true -->
+  <arg name="target_prior_enabled" default="true"/>
   <arg name="target_present" default="true"/>
   <arg name="target_x" default="5.0"/>
   <arg name="target_y" default="5.0"/>
@@ -56,6 +58,8 @@
   <arg name="target_verification_timeout" default="20.0"/>
   <arg name="target_verifier_switch_timeout" default="10.0"/>
   <arg name="target_position_tolerance" default="1.5"/>
+  <!-- 消融开关：false 表示确认后仍继续探索，正式运行保持 true -->
+  <arg name="target_stop_on_confirm" default="true"/>
 
   <include file="$(find exploration_manager)/launch/multi/multi_sim.launch">
     <arg name="map_file" value="$(arg map_file)"/>
@@ -79,6 +83,7 @@
     <arg name="recovery_grace" value="$(arg recovery_grace)"/>
     <arg name="recovery_timeout" value="$(arg recovery_timeout)"/>
     <arg name="target_search_enabled" value="$(arg target_search_enabled)"/>
+    <arg name="target_prior_enabled" value="$(arg target_prior_enabled)"/>
     <arg name="target_present" value="$(arg target_present)"/>
     <arg name="target_x" value="$(arg target_x)"/>
     <arg name="target_y" value="$(arg target_y)"/>
@@ -101,6 +106,7 @@
     <arg name="target_verification_timeout" value="$(arg target_verification_timeout)"/>
     <arg name="target_verifier_switch_timeout" value="$(arg target_verifier_switch_timeout)"/>
     <arg name="target_position_tolerance" value="$(arg target_position_tolerance)"/>
+    <arg name="target_stop_on_confirm" value="$(arg target_stop_on_confirm)"/>
     <arg name="box_x_min" value="$(arg box_x_min)"/>
     <arg name="box_y_min" value="$(arg box_y_min)"/>
     <arg name="box_z_min" value="$(arg box_z_min)"/>

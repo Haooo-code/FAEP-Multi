@@ -36,6 +36,7 @@
   <arg name="recovery_timeout" default="150.0"/> <!-- 失联降级后的恢复总时限（秒） -->
 
   <arg name="target_search_enabled" default="false"/>
+  <arg name="target_prior_enabled" default="true"/>
   <arg name="target_present" default="true"/>
   <arg name="target_x" default="5.0"/>
   <arg name="target_y" default="5.0"/>
@@ -58,6 +59,7 @@
   <arg name="target_verification_timeout" default="20.0"/>
   <arg name="target_verifier_switch_timeout" default="10.0"/>
   <arg name="target_position_tolerance" default="1.5"/>
+  <arg name="target_stop_on_confirm" default="true"/>
 
   <!-- 中央协调器（仅 use_coord=true 时启动） -->
   <node pkg="coordinator" type="faep_coordinator" name="faep_coordinator" output="screen" if="$(arg use_coord)">
@@ -80,6 +82,7 @@
     <param name="recovery_grace" value="$(arg recovery_grace)"/>
     <param name="recovery_timeout" value="$(arg recovery_timeout)"/>
     <param name="target_search_enabled" value="$(arg target_search_enabled)"/>
+    <param name="target/stop_on_confirm" value="$(arg target_stop_on_confirm)"/>
     <param name="target/confirm_frames" value="$(arg target_confirm_frames)"/>
     <param name="target/confirm_window" value="$(arg target_confirm_window)"/>
     <param name="target/high_confidence" value="$(arg target_high_confidence)"/>
@@ -118,6 +121,7 @@
     <arg name="box_z_max" value="$(arg box_z_max)"/>
     <arg name="use_coord" value="$(arg use_coord)"/>
     <arg name="target_search_enabled" value="$(arg target_search_enabled)"/>
+    <arg name="target_prior_enabled" value="$(arg target_prior_enabled)"/>
     <arg name="target_prior_x" value="$(arg target_prior_x)"/>
     <arg name="target_prior_y" value="$(arg target_prior_y)"/>
     <arg name="target_prior_z" value="$(arg target_prior_z)"/>
@@ -153,6 +157,7 @@
     <arg name="box_z_max" value="$(arg box_z_max)"/>
     <arg name="use_coord" value="$(arg use_coord)"/>
     <arg name="target_search_enabled" value="$(arg target_search_enabled)"/>
+    <arg name="target_prior_enabled" value="$(arg target_prior_enabled)"/>
     <arg name="target_prior_x" value="$(arg target_prior_x)"/>
     <arg name="target_prior_y" value="$(arg target_prior_y)"/>
     <arg name="target_prior_z" value="$(arg target_prior_z)"/>
@@ -188,6 +193,7 @@
     <arg name="box_z_max" value="$(arg box_z_max)"/>
     <arg name="use_coord" value="$(arg use_coord)"/>
     <arg name="target_search_enabled" value="$(arg target_search_enabled)"/>
+    <arg name="target_prior_enabled" value="$(arg target_prior_enabled)"/>
     <arg name="target_prior_x" value="$(arg target_prior_x)"/>
     <arg name="target_prior_y" value="$(arg target_prior_y)"/>
     <arg name="target_prior_z" value="$(arg target_prior_z)"/>

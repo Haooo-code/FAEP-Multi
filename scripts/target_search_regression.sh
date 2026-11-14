@@ -110,6 +110,15 @@ else
       RESULT=full_coverage
       break
     fi
+    if [ "$EXPECTED" = "target_terminal" ] && [ "$HALT_COUNT" -ge 3 ]; then
+      if grep -aq "\[target\] CONFIRMED" "$LOG"; then
+        RESULT=confirmed
+        break
+      elif grep -aq "\[target\] NOT_FOUND" "$LOG"; then
+        RESULT=not_found
+        break
+      fi
+    fi
     if ! kill -0 "$LAUNCH_PID" 2>/dev/null; then
       RESULT=launch_exited
       break
