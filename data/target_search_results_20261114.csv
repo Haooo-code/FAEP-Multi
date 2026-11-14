@@ -1,0 +1,6 @@
+scenario,target_x,target_y,target_present,run,wall_s,single_drone_time_s,result,confirmation_source,notes
+office2,1.0,3.0,true,1,25,10.7/15.8/20.7,confirmed,drone3,three high-confidence frames
+office2,1.0,3.0,true,2,21,10.0/15.0/20.1,confirmed,drone3,three high-confidence frames
+office2,1.0,3.0,true,3,22,10.1/15.2/20.2,confirmed,drone3,three high-confidence frames
+office2,1.0,3.0,false,1,87,74.2/79.2/84.1,not_found,none,full-map fallback; no premature stop
+office2,1.0,3.0,false,1,82,69.2/74.3/79.3,full_coverage,none,target_search disabled regression run

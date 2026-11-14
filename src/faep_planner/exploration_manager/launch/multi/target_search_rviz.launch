@@ -1,0 +1,7 @@
+<launch>
+  <!-- 目标搜索演示 RViz：除地图/轨迹外，显示目标候选和确认位置 -->
+  <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log"
+        args="-d $(find plan_manage)/config/target_search.rviz"/>
+  <node pkg="tf" type="static_transform_publisher" name="tf_target_search_world"
+        args="0 0 0 0 0 0 world navigation 100"/>
+</launch>

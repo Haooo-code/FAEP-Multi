@@ -78,6 +78,15 @@ private:
   vector<Vector3d> task_centers_;
   vector<double> task_radii_;
 
+  // v3.0：目标先验。目标精确位置未知，只使用大致的先验中心并随时间逐步扩大搜索半径。
+  bool target_search_enabled_ = false;
+  Vector3d target_prior_center_ = Vector3d::Zero();
+  double target_prior_radius_ = 3.0;
+  double target_prior_growth_ = 0.12;
+  double target_prior_max_radius_ = 10.0;
+  ros::Time target_search_start_;
+  double currentTargetRadius() const;
+
   // 点是否落在任一分配任务区域内（含 0.5m 放宽容差）
   bool inTaskRegion(const Vector3d& pt);
 

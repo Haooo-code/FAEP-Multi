@@ -174,6 +174,9 @@ namespace fast_planner
     if (!msg->data || halt_received_)
       return;
     halt_received_ = true;
+    coord_wait_ = false;
+    if (flight_start > 0.0)
+      flight_time = ros::Time::now().toSec() - flight_start;
     ROS_WARN("[COORD] ======== HALT received: exploration over (Flight_time=%.1f s, dist=%.1f m) ========",
              flight_time, flight_distance);
   }
@@ -537,6 +540,31 @@ namespace fast_planner
   {
     ROS_INFO_STREAM_THROTTLE(1.0, "[FSM]: state: " << fd_->state_str_[int(state_)]);
 
+    // 目标确认或协调器强制收尾后，必须真正退出前沿规划，而不是只记录 HALT 标志。
+    // 当前轨迹立即结束，飞控保持最后位置指令，检测机仍可继续观察目标。
+    if (halt_received_ && state_ != FINISH)
+    {
+      {
+        std::lock_guard<std::mutex> lock(mtx_plan_);
+        plan_.clear();
+        state hold_state;
+        hold_state.setPos(fd_->odom_pos_);
+        hold_state.setVel(0, 0, 0);
+        hold_state.setAccel(0, 0, 0);
+        hold_state.yaw = fd_->odom_yaw_;
+        hold_state.dyaw = 0;
+        hold_state.ddyaw = 0;
+        plan_.push_back(hold_state);
+        receive_traj_ = true;
+      }
+      fd_->static_state_ = true;
+      flight_time = ros::Time::now().toSec() - flight_start;
+      transitState(FINISH, "coord halt");
+      clearVisMarker();
+      ROS_WARN("[COORD] frontier expansion stopped, vehicle holds current position");
+      return;
+    }
+
     switch (state_)
     {
     case INIT:
@@ -611,15 +639,16 @@ namespace fast_planner
     case FINISH:
     {
       ROS_INFO_THROTTLE(1.0, "finish exploration.");
-      // 带上机号标识：多机日志混合时用于区分各机指标
-      cout << bold << green << "[Flight_time]: " << flight_time << " (drone " << drone_id_ << ")" << reset
-           << endl;
-      cout << bold << green << "[Flight_cost]: " << flight_CtrCost << " (drone " << drone_id_ << ")"
-           << reset << endl;
-      cout << bold << green << "[Flight_dist]: " << flight_distance << " (drone " << drone_id_ << ")"
-           << reset << endl;
       if (!isfinished)
       {
+        // 带上机号标识：多机日志混合时用于区分各机指标。
+        // 只在第一次进入 FINISH 时输出，避免目标触发停止后每秒重复刷日志。
+        cout << bold << green << "[Flight_time]: " << flight_time << " (drone " << drone_id_
+             << ")" << reset << endl;
+        cout << bold << green << "[Flight_cost]: " << flight_CtrCost << " (drone "
+             << drone_id_ << ")" << reset << endl;
+        cout << bold << green << "[Flight_dist]: " << flight_distance << " (drone "
+             << drone_id_ << ")" << reset << endl;
         // 原代码写死作者服务器路径，这里改为可配置（留空则不写文件）
         if (!fp_->result_file_.empty())
         {

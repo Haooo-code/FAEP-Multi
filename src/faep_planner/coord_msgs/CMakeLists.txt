@@ -11,6 +11,8 @@ add_message_files(
   FILES
   FrontierSnapshot.msg
   FrontierAssignment.msg
+  TargetDetection.msg
+  TargetStatus.msg
 )
 
 generate_messages(

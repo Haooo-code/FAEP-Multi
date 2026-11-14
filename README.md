@@ -63,6 +63,43 @@ roslaunch exploration_manager multi_bringup.launch use_coord:=true partition_mod
 
 启动后向三架机的 `move_base_simple/goal` 各发一个目标，或运行 `scripts/trigger_multi.sh`。脚本中的 `/mnt/d/WSL` 路径是实验机器上的路径，换环境时请按 [`scripts/README.md`](scripts/README.md) 修改。
 
+## 目标触发式搜索
+
+分支 `codex/target-search-semifinal` 增加了可选的目标触发式搜索。该功能默认关闭，不影响已有 A/B/C 对照。开启后：
+
+1. 前沿选择优先考虑目标先验区域，先验半径随时间扩大。
+2. 模拟目标感知节点根据相机视场、距离、遮挡和随机漏检生成检测。
+3. 协调器对单机多帧和双机交叉证据进行分级确认。
+4. 目标确认后向所有飞机发送 HALT，停止前沿扩展并在当前位置悬停。
+5. 如果没有检测到目标，则继续探索全图，最终报告 `NOT_FOUND`。
+
+office2 目标搜索示例：
+
+```bash
+roslaunch exploration_manager multi_bringup.launch \
+  use_coord:=true partition_mode:=true \
+  map_file:=$(rospack find map_generator)/resource/office2.pcd \
+  map_size_x:=42 map_size_y:=42 map_size_z:=10.0 \
+  box_x_min:=-10.4 box_y_min:=-9.9 box_z_min:=-0.1 \
+  box_x_max:=10.4 box_y_max:=9.9 box_z_max:=2.0 \
+  d1_x:=-7.5 d1_y:=-3.5 d1_z:=1.0 \
+  d2_x:=4.5 d2_y:=-3.5 d2_z:=1.4 \
+  d3_x:=-3.5 d3_y:=6.5 d3_z:=1.8 \
+  target_search_enabled:=true \
+  target_x:=1.0 target_y:=3.0 target_z:=1.0 \
+  target_prior_x:=1.0 target_prior_y:=3.0 target_prior_z:=1.0 \
+  target_prior_radius:=3.0 target_prior_growth:=0.05 \
+  target_prior_max_radius:=8.0 target_sensor_max_range:=8.0
+```
+
+RViz 目标显示：
+
+```bash
+roslaunch exploration_manager target_search_rviz.launch
+```
+
+该版本的感知是受视场、距离和遮挡约束的模拟目标感知，不是真实 RGB 人物检测器。检测器与规划器之间使用 `coord_msgs/TargetDetection` 和 `coord_msgs/TargetStatus` 接口，后续可以替换为真实 RGB-D 检测节点。
+
 ## 可靠性
 
 团队定位并修复了 `KinodynamicAstar::getSamples` 搜索树父指针成环引起的 OOM。heaptrack 记录到采样路径持续增长，进一步检查确认父链成环。四层防御和 `malloc_trim` 使探索节点常驻内存稳定在约 1.54 GB。

@@ -18,11 +18,18 @@
 #include <ros/ros.h>
 #include <coord_msgs/FrontierSnapshot.h>
 #include <coord_msgs/FrontierAssignment.h>
+#include <coord_msgs/TargetDetection.h>
+#include <coord_msgs/TargetStatus.h>
 #include <std_msgs/Bool.h>
+#include <visualization_msgs/Marker.h>
 #include <Eigen/Eigen>
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <deque>
+#include <set>
 #include <sstream>
 #include <limits>
 
@@ -64,6 +71,13 @@ struct Task
   }
 };
 
+struct TargetSample
+{
+  ros::Time stamp;
+  float confidence;
+  Eigen::Vector3d position;
+};
+
 class Coordinator
 {
 public:
@@ -95,6 +109,16 @@ public:
     nh_.param("recovery_grace", recovery_grace_, 20.0);
     nh_.param("recovery_timeout", recovery_timeout_, 150.0);
 
+    // v3.0：目标触发式探索。默认为关闭，保证既有 A/B/C 实验行为不变。
+    nh_.param("target_search_enabled", target_search_enabled_, false);
+    nh_.param("target/confirm_frames", target_confirm_frames_, 3);
+    nh_.param("target/confirm_window", target_confirm_window_, 2.0);
+    nh_.param("target/high_confidence", target_high_confidence_, 0.80);
+    nh_.param("target/low_confidence", target_low_confidence_, 0.45);
+    nh_.param("target/verification_sources", target_verification_sources_, 2);
+    nh_.param("target/verification_timeout", target_verification_timeout_, 10.0);
+    nh_.param("target/detection_timeout", target_detection_timeout_, 1.0);
+
     drones_.resize(drone_num_);
     sub_snap_.resize(drone_num_);
     pub_asgn_.resize(drone_num_);
@@ -105,6 +129,7 @@ public:
     idle_timer_on_.assign(drone_num_, false);
     sect_lo_.assign(drone_num_, -1e6);
     sect_hi_.assign(drone_num_, 1e6);
+    target_samples_.resize(drone_num_);
 
     for (int i = 0; i < drone_num_; ++i)
     {
@@ -117,6 +142,12 @@ public:
     }
     pub_halt_ = nh_.advertise<std_msgs::Bool>("/coord/halt", 10, true);
     sub_start_ = nh_.subscribe("/coord/start", 10, &Coordinator::startCallback, this);
+    sub_target_detection_ =
+        nh_.subscribe("/target/detection", 30, &Coordinator::targetDetectionCallback, this);
+    pub_target_status_ =
+        nh_.advertise<coord_msgs::TargetStatus>("/target/status", 10, true);
+    pub_target_marker_ =
+        nh_.advertise<visualization_msgs::Marker>("/target/marker", 10, true);
 
     ros::Time now = ros::Time::now();
     for (int i = 0; i < drone_num_; ++i)
@@ -142,6 +173,9 @@ private:
   std::vector<ros::Publisher> pub_asgn_;
   ros::Publisher pub_halt_;
   ros::Subscriber sub_start_;
+  ros::Subscriber sub_target_detection_;
+  ros::Publisher pub_target_status_;
+  ros::Publisher pub_target_marker_;
   ros::Timer timer_;
 
   std::vector<Task> tasks_;
@@ -172,6 +206,23 @@ private:
   ros::Time degraded_since_;            // 降级起始时刻（给幸存机留恢复缓冲）
   double recovery_grace_ = 20.0;        // 降级后至少等待多久才允许“全空闲”收尾
   double recovery_timeout_ = 150.0;     // 降级恢复总时限（到点统一 HALT，覆盖可能不全）
+
+  // v3.0 目标搜索状态
+  bool target_search_enabled_ = false;
+  int target_confirm_frames_ = 3;
+  int target_verification_sources_ = 2;
+  double target_confirm_window_ = 2.0;
+  double target_high_confidence_ = 0.80;
+  double target_low_confidence_ = 0.45;
+  double target_verification_timeout_ = 10.0;
+  double target_detection_timeout_ = 1.0;
+  std::vector<std::deque<TargetSample> > target_samples_;
+  uint8_t target_state_ = coord_msgs::TargetStatus::SEARCHING;
+  bool target_confirmed_ = false;
+  ros::Time last_target_detection_;
+  Eigen::Vector3d target_position_ = Eigen::Vector3d::Zero();
+  float target_confidence_ = 0.0f;
+  int target_source_id_ = 0;
 
   // 分区是否仍按扇区执行（失联后自动降级）
   bool partitionActive() const
@@ -323,11 +374,205 @@ private:
     }
   }
 
+  void resetTargetSearch()
+  {
+    target_state_ = coord_msgs::TargetStatus::SEARCHING;
+    target_confirmed_ = false;
+    last_target_detection_ = ros::Time();
+    target_position_.setZero();
+    target_confidence_ = 0.0f;
+    target_source_id_ = 0;
+    for (size_t i = 0; i < target_samples_.size(); ++i)
+      target_samples_[i].clear();
+    if (pub_target_status_)
+      publishTargetStatus(coord_msgs::TargetStatus::SEARCHING, 0.0f, 0,
+                          Eigen::Vector3d::Zero(), "searching");
+  }
+
+  void publishTargetStatus(uint8_t state, float confidence, int source_id,
+                           const Eigen::Vector3d &position, const std::string &text)
+  {
+    coord_msgs::TargetStatus msg;
+    msg.header.stamp = ros::Time::now();
+    msg.header.frame_id = "world";
+    msg.state = state;
+    msg.confidence = confidence;
+    msg.source_id = static_cast<uint8_t>(std::max(0, source_id));
+    msg.estimated_position.x = position.x();
+    msg.estimated_position.y = position.y();
+    msg.estimated_position.z = position.z();
+    msg.message = text;
+    pub_target_status_.publish(msg);
+  }
+
+  void publishTargetMarker(uint8_t state, int source_id, const Eigen::Vector3d &position,
+                           float confidence)
+  {
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "world";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "target_search";
+    marker.id = 0;
+    marker.type = state == coord_msgs::TargetStatus::CONFIRMED
+                      ? visualization_msgs::Marker::CYLINDER
+                      : visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = position.x();
+    marker.pose.position.y = position.y();
+    marker.pose.position.z = position.z();
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = state == coord_msgs::TargetStatus::CONFIRMED ? 0.5 : 0.35;
+    marker.scale.y = marker.scale.x;
+    marker.scale.z = state == coord_msgs::TargetStatus::CONFIRMED ? 1.7 : 0.35;
+    marker.color.r = state == coord_msgs::TargetStatus::CONFIRMED ? 0.1f : 1.0f;
+    marker.color.g = state == coord_msgs::TargetStatus::CONFIRMED ? 0.9f : 0.75f;
+    marker.color.b = 0.1f;
+    marker.color.a = 0.85f;
+    marker.lifetime =
+        state == coord_msgs::TargetStatus::CONFIRMED ? ros::Duration(0.0) : ros::Duration(2.0);
+    marker.text = "person candidate from drone" + std::to_string(source_id) +
+                  " conf=" + std::to_string(confidence);
+    pub_target_marker_.publish(marker);
+  }
+
+  void confirmTarget(int source_id, const Eigen::Vector3d &position, float confidence,
+                     const std::string &reason)
+  {
+    if (target_confirmed_)
+      return;
+    target_confirmed_ = true;
+    target_state_ = coord_msgs::TargetStatus::CONFIRMED;
+    target_source_id_ = source_id;
+    target_position_ = position;
+    target_confidence_ = confidence;
+    ROS_WARN("[target] CONFIRMED source=drone%d confidence=%.2f position=(%.2f, %.2f, %.2f) reason=%s",
+             source_id, confidence, position.x(), position.y(), position.z(), reason.c_str());
+    publishTargetStatus(target_state_, confidence, source_id, position, reason);
+    publishTargetMarker(target_state_, source_id, position, confidence);
+    halt("target confirmed by drone" + std::to_string(source_id));
+  }
+
+  void targetDetectionCallback(const coord_msgs::TargetDetectionConstPtr &msg)
+  {
+    if (!target_search_enabled_ || halted_ || target_confirmed_)
+      return;
+    if (msg->source_id == 0 || msg->source_id > drone_num_)
+      return;
+
+    const ros::Time now = ros::Time::now();
+    if (!msg->header.stamp.isZero() &&
+        std::abs((now - msg->header.stamp).toSec()) > target_detection_timeout_)
+      return;
+
+    const int source_index = static_cast<int>(msg->source_id) - 1;
+    const Eigen::Vector3d detected(msg->position.x, msg->position.y, msg->position.z);
+    std::deque<TargetSample> &source_samples = target_samples_[source_index];
+    while (!source_samples.empty() &&
+           (now - source_samples.front().stamp).toSec() > target_verification_timeout_)
+      source_samples.pop_front();
+    source_samples.push_back(TargetSample{now, msg->confidence, detected});
+
+    int source_frames_in_window = 0;
+    std::set<int> active_sources;
+    float best_confidence = 0.0f;
+    Eigen::Vector3d weighted_sum = Eigen::Vector3d::Zero();
+    double weight_sum = 0.0;
+    for (int i = 0; i < drone_num_; ++i)
+    {
+      std::deque<TargetSample> &samples = target_samples_[i];
+      while (!samples.empty() &&
+             (now - samples.front().stamp).toSec() > target_verification_timeout_)
+        samples.pop_front();
+      if (samples.empty())
+        continue;
+      active_sources.insert(i + 1);
+      for (const auto &s : samples)
+      {
+        if (i == source_index &&
+            (now - s.stamp).toSec() <= target_confirm_window_)
+          ++source_frames_in_window;
+        best_confidence = std::max(best_confidence, s.confidence);
+        const double weight = std::max(0.05, static_cast<double>(s.confidence));
+        weighted_sum += weight * s.position;
+        weight_sum += weight;
+      }
+    }
+
+    bool every_source_has_two_frames = true;
+    for (int i = 0; i < drone_num_; ++i)
+    {
+      if (active_sources.count(i + 1) == 0)
+        continue;
+      if (target_samples_[i].size() < 2)
+        every_source_has_two_frames = false;
+    }
+
+    if (weight_sum > 0.0)
+    {
+      target_position_ = weighted_sum / weight_sum;
+      target_confidence_ = best_confidence;
+      target_source_id_ = source_index + 1;
+      last_target_detection_ = now;
+      publishTargetMarker(coord_msgs::TargetStatus::CANDIDATE, target_source_id_,
+                          target_position_, target_confidence_);
+    }
+
+    const bool high_confidence =
+        msg->confidence >= static_cast<float>(target_high_confidence_);
+    const bool enough_single_source_frames =
+        source_frames_in_window >= target_confirm_frames_ && high_confidence;
+    const bool enough_cross_source_evidence =
+        static_cast<int>(active_sources.size()) >= target_verification_sources_ &&
+        every_source_has_two_frames &&
+        msg->confidence >= static_cast<float>(target_low_confidence_);
+
+    if (enough_single_source_frames || enough_cross_source_evidence)
+    {
+      confirmTarget(source_index + 1, target_position_, target_confidence_,
+                    enough_single_source_frames
+                        ? "single-drone multi-frame confirmation"
+                        : "second-drone cross-view confirmation");
+      return;
+    }
+
+    if (msg->confidence >= static_cast<float>(target_low_confidence_))
+    {
+      const uint8_t new_state =
+          msg->requires_verification || msg->confidence < static_cast<float>(target_high_confidence_)
+              ? coord_msgs::TargetStatus::VERIFYING
+              : coord_msgs::TargetStatus::CANDIDATE;
+      if (target_state_ != new_state)
+      {
+        target_state_ = new_state;
+        publishTargetStatus(target_state_, target_confidence_, source_index + 1, target_position_,
+                            target_state_ == coord_msgs::TargetStatus::VERIFYING
+                                ? "candidate detected, waiting for confirmation"
+                                : "candidate detected, accumulating frames");
+      }
+    }
+  }
+
+  void updateTargetTimeout(const ros::Time &now)
+  {
+    if (!target_search_enabled_ || target_confirmed_ ||
+        target_state_ == coord_msgs::TargetStatus::SEARCHING ||
+        last_target_detection_.isZero())
+      return;
+    if ((now - last_target_detection_).toSec() <= target_verification_timeout_)
+      return;
+
+    resetTargetSearch();
+    publishTargetStatus(coord_msgs::TargetStatus::SEARCHING, 0.0f, 0,
+                        Eigen::Vector3d::Zero(), "candidate expired, resume search");
+    ROS_WARN("[coord] target candidate expired, resume frontier search");
+  }
+
   void startCallback(const std_msgs::BoolConstPtr &msg)
   {
     (void)msg;
     start_time_ = ros::Time::now();
     halted_ = false;
+    resetTargetSearch();
     ROS_INFO("[coord] start signal received");
   }
 
@@ -356,6 +601,7 @@ private:
     if (halted_)
       return;
     ros::Time now = ros::Time::now();
+    updateTargetTimeout(now);
     initSectorsIfNeeded(now);
 
     // 1) 存活检查：失联机释放全部任务（兜底：其它机可以接手）
@@ -733,6 +979,15 @@ private:
 
   void halt(const std::string &reason)
   {
+    if (halted_)
+      return;
+    if (target_search_enabled_ && !target_confirmed_)
+    {
+      target_state_ = coord_msgs::TargetStatus::NOT_FOUND;
+      publishTargetStatus(target_state_, target_confidence_, target_source_id_, target_position_,
+                          "search ended without a confirmed target: " + reason);
+      ROS_WARN("[target] NOT_FOUND: %s", reason.c_str());
+    }
     halted_ = true;
     std_msgs::Bool m;
     m.data = true;

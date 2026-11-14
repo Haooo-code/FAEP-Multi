@@ -3,6 +3,7 @@
 #include <thread>
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <lkh_tsp_solver/lkh_interface.h>
 #include <sys/stat.h>
 #include <active_perception/graph_node.h>
@@ -60,6 +61,13 @@ namespace fast_planner
     nh.param("exploration/tsp_dir", ep_->tsp_dir_, string("null"));
     nh.param("exploration/relax_time", ep_->relax_time_, 1.0);
     nh.param("exploration/min_target_dist", min_target_dist_, 0.0);
+    nh.param("exploration/target_search_enabled", target_search_enabled_, false);
+    nh.param("exploration/target_prior_x", target_prior_center_.x(), 0.0);
+    nh.param("exploration/target_prior_y", target_prior_center_.y(), 0.0);
+    nh.param("exploration/target_prior_z", target_prior_center_.z(), 1.0);
+    nh.param("exploration/target_prior_radius", target_prior_radius_, 3.0);
+    nh.param("exploration/target_prior_growth", target_prior_growth_, 0.12);
+    nh.param("exploration/target_prior_max_radius", target_prior_max_radius_, 10.0);
 
     // 多机支持：确保 TSP 工作目录存在。LKH 通过该目录下的 par/tsp/txt 文件读写，
     // 多机时各机必须使用独立目录（如 /tmp/faep_lkh/drone1）以避免文件互相覆盖。
@@ -162,6 +170,17 @@ namespace fast_planner
     return false;
   }
 
+  double FastExplorationManager::currentTargetRadius() const
+  {
+    if (!target_search_enabled_)
+      return std::numeric_limits<double>::max();
+    if (target_search_start_.isZero())
+      return target_prior_radius_;
+    const double elapsed = std::max(0.0, (ros::Time::now() - target_search_start_).toSec());
+    return std::min(target_prior_max_radius_,
+                    target_prior_radius_ + target_prior_growth_ * elapsed);
+  }
+
   // 卡死自愈：规划持续失败（连续 20s 从未成功）-> 把最近尝试的目标加入黑名单，
   // 之后的规划跳过该目标，避免陷入 "No path to next viewpoint" 无限重试。
   void FastExplorationManager::notifyPlanFail()
@@ -209,6 +228,8 @@ namespace fast_planner
     ed_->views_.clear();
     ed_->global_tour_.clear();
     coord_filter_emptied_ = false;  // 多机协调：复位"过滤清空"标志
+    if (target_search_enabled_ && target_search_start_.isZero())
+      target_search_start_ = ros::Time::now();
 
     manyViewPoints = false;
 
@@ -299,6 +320,39 @@ namespace fast_planner
         if (filtered.size() < indices.size())
           ROS_WARN_THROTTLE(2.0, "[HEAL] skipped %zu unreachable/out-of-region target(s)",
                             indices.size() - filtered.size());
+
+        // 目标先验只影响候选顺序，不删除全局探索能力：
+        // 先验半径内存在前沿时优先探索；半径内没有前沿时自动回退到全局前沿。
+        if (target_search_enabled_ && !filtered.empty())
+        {
+          const double radius = currentTargetRadius();
+          vector<int> target_priority;
+          target_priority.reserve(filtered.size());
+          for (size_t i = 0; i < filtered.size(); ++i)
+          {
+            Eigen::Vector2d target_xy(target_prior_center_.x(), target_prior_center_.y());
+            Eigen::Vector2d frontier_xy(ed_->averages_[filtered[i]].x(),
+                                        ed_->averages_[filtered[i]].y());
+            if ((frontier_xy - target_xy).norm() <= radius)
+              target_priority.push_back(filtered[i]);
+          }
+          if (!target_priority.empty())
+          {
+            ROS_INFO_THROTTLE(2.0,
+                              "[TARGET] prioritize %zu/%zu frontier(s) within %.2fm of prior "
+                              "(%.2f, %.2f)",
+                              target_priority.size(), filtered.size(), radius,
+                              target_prior_center_.x(), target_prior_center_.y());
+            filtered.swap(target_priority);
+          }
+          else
+          {
+            ROS_WARN_THROTTLE(3.0,
+                              "[TARGET] no frontier in priority radius %.2fm, expand globally",
+                              radius);
+          }
+        }
+
         indices = filtered;
         last_plan_target_ = ed_->averages_[indices[0]];  // 记录即将尝试的首个目标（供失败黑名单）
       }

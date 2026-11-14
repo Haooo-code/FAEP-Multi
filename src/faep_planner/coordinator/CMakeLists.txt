@@ -10,10 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   std_msgs
+  visualization_msgs
 )
 
 catkin_package(
-  CATKIN_DEPENDS coord_msgs geometry_msgs roscpp std_msgs
+  CATKIN_DEPENDS coord_msgs geometry_msgs roscpp std_msgs visualization_msgs
 )
 
 include_directories(

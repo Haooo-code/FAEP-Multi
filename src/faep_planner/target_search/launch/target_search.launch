@@ -1,0 +1,78 @@
+<launch>
+  <arg name="target_present" default="true"/>
+  <arg name="target_class" default="person"/>
+  <arg name="target_x" default="5.0"/>
+  <arg name="target_y" default="5.0"/>
+  <arg name="target_z" default="1.0"/>
+  <arg name="max_range" default="7.0"/>
+  <arg name="base_detection_probability" default="0.92"/>
+  <arg name="position_noise" default="0.08"/>
+  <arg name="verification_confidence" default="0.80"/>
+  <arg name="fx" default="387.229248046875"/>
+  <arg name="fy" default="387.229248046875"/>
+  <arg name="cx" default="321.04638671875"/>
+  <arg name="cy" default="243.44969177246094"/>
+
+  <group ns="drone1/target_perception_sim">
+    <node pkg="target_search" type="target_perception_sim" name="target_perception_sim" output="screen">
+      <remap from="sensor_pose" to="/drone1/pcl_render_node/sensor_pose"/>
+      <remap from="depth" to="/drone1/pcl_render_node/depth"/>
+      <param name="source_id" value="1"/>
+      <param name="target_present" value="$(arg target_present)"/>
+      <param name="target_class" value="$(arg target_class)"/>
+      <param name="target_x" value="$(arg target_x)"/>
+      <param name="target_y" value="$(arg target_y)"/>
+      <param name="target_z" value="$(arg target_z)"/>
+      <param name="camera/fx" value="$(arg fx)"/>
+      <param name="camera/fy" value="$(arg fy)"/>
+      <param name="camera/cx" value="$(arg cx)"/>
+      <param name="camera/cy" value="$(arg cy)"/>
+      <param name="sensing/max_range" value="$(arg max_range)"/>
+      <param name="sensing/base_detection_probability" value="$(arg base_detection_probability)"/>
+      <param name="sensing/position_noise" value="$(arg position_noise)"/>
+      <param name="sensing/verification_confidence" value="$(arg verification_confidence)"/>
+    </node>
+  </group>
+
+  <group ns="drone2/target_perception_sim">
+    <node pkg="target_search" type="target_perception_sim" name="target_perception_sim" output="screen">
+      <remap from="sensor_pose" to="/drone2/pcl_render_node/sensor_pose"/>
+      <remap from="depth" to="/drone2/pcl_render_node/depth"/>
+      <param name="source_id" value="2"/>
+      <param name="target_present" value="$(arg target_present)"/>
+      <param name="target_class" value="$(arg target_class)"/>
+      <param name="target_x" value="$(arg target_x)"/>
+      <param name="target_y" value="$(arg target_y)"/>
+      <param name="target_z" value="$(arg target_z)"/>
+      <param name="camera/fx" value="$(arg fx)"/>
+      <param name="camera/fy" value="$(arg fy)"/>
+      <param name="camera/cx" value="$(arg cx)"/>
+      <param name="camera/cy" value="$(arg cy)"/>
+      <param name="sensing/max_range" value="$(arg max_range)"/>
+      <param name="sensing/base_detection_probability" value="$(arg base_detection_probability)"/>
+      <param name="sensing/position_noise" value="$(arg position_noise)"/>
+      <param name="sensing/verification_confidence" value="$(arg verification_confidence)"/>
+    </node>
+  </group>
+
+  <group ns="drone3/target_perception_sim">
+    <node pkg="target_search" type="target_perception_sim" name="target_perception_sim" output="screen">
+      <remap from="sensor_pose" to="/drone3/pcl_render_node/sensor_pose"/>
+      <remap from="depth" to="/drone3/pcl_render_node/depth"/>
+      <param name="source_id" value="3"/>
+      <param name="target_present" value="$(arg target_present)"/>
+      <param name="target_class" value="$(arg target_class)"/>
+      <param name="target_x" value="$(arg target_x)"/>
+      <param name="target_y" value="$(arg target_y)"/>
+      <param name="target_z" value="$(arg target_z)"/>
+      <param name="camera/fx" value="$(arg fx)"/>
+      <param name="camera/fy" value="$(arg fy)"/>
+      <param name="camera/cx" value="$(arg cx)"/>
+      <param name="camera/cy" value="$(arg cy)"/>
+      <param name="sensing/max_range" value="$(arg max_range)"/>
+      <param name="sensing/base_detection_probability" value="$(arg base_detection_probability)"/>
+      <param name="sensing/position_noise" value="$(arg position_noise)"/>
+      <param name="sensing/verification_confidence" value="$(arg verification_confidence)"/>
+    </node>
+  </group>
+</launch>
