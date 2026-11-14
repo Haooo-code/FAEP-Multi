@@ -50,3 +50,7 @@ HALT、目标状态日志，并保存最终 RViz 标记；设置
 目标搜索组件消融使用 `run_target_search_ablation_suite.sh`；目标先验在东侧
 场景的专项对照使用 `run_target_prior_ablation.sh`，汇总和成图由
 `analyze_target_search_ablation.py` 完成。
+
+三级协同消融（L1 独立、L2 协调无分区、L3 扇区协同）的数据由
+`data/coordination_level_ablation_results_20261115.csv` 固化，配图使用
+`make_coordination_ablation_fig.py` 生成。

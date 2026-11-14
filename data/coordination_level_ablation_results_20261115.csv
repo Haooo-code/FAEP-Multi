@@ -1,0 +1,10 @@
+scene,level,level_name,rounds,mission_time_mean_s,mission_time_std_s,wall_mean_s,wall_std_s,source
+office,L1,三机独立,5,167.2,3.6,183.0,6.6,2026-10-16 frozen A/B/C results
+office,L2,协调器无空间分区,5,208.8,59.3,265.0,67.0,2026-10-17 v1 coordinated results
+office,L3,协调器加扇区分区,5,94.0,10.0,100.4,10.4,2026-10-17 v2 partition results
+office2,L1,三机独立,5,132.9,6.1,167.6,26.3,2026-10-16 frozen A/B/C results
+office2,L2,协调器无空间分区,5,160.9,16.3,210.4,40.6,2026-10-17 v1 coordinated results
+office2,L3,协调器加扇区分区,5,66.4,8.3,73.8,7.6,2026-10-17 v2 partition results
+office3,L1,三机独立,3,161.9,3.8,184.0,7.9,2026-10-16 frozen A/B/C results
+office3,L2,协调器无空间分区,3,209.4,5.5,245.0,8.5,2026-10-17 v1 coordinated results
+office3,L3,协调器加扇区分区,3,90.7,5.9,97.3,6.1,2026-10-17 v2 partition results
