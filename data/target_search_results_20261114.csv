@@ -2,5 +2,9 @@ scenario,target_x,target_y,target_present,run,wall_s,single_drone_time_s,result,
 office2,1.0,3.0,true,1,25,10.7/15.8/20.7,confirmed,drone3,three high-confidence frames
 office2,1.0,3.0,true,2,21,10.0/15.0/20.1,confirmed,drone3,three high-confidence frames
 office2,1.0,3.0,true,3,22,10.1/15.2/20.2,confirmed,drone3,three high-confidence frames
+office2,3.0,3.0,true,1,18,4.7/9.8/14.9,confirmed,drone2,second-drone cross-view confirmation; high threshold set to 0.99
+office2,5.0,5.0,true,1,43,30.4/35.4/40.3,confirmed,drone2,multi-source detections
+office2,5.0,5.0,true,2,55,41.0/46.1/51.3,confirmed,drone2,multi-source detections
+office2,5.0,5.0,true,3,72,58.6/63.7/68.8,not_found,none,target present but no confirmation; no false stop
 office2,1.0,3.0,false,1,87,74.2/79.2/84.1,not_found,none,full-map fallback; no premature stop
 office2,1.0,3.0,false,1,82,69.2/74.3/79.3,full_coverage,none,target_search disabled regression run

@@ -548,6 +548,9 @@ private:
                             target_state_ == coord_msgs::TargetStatus::VERIFYING
                                 ? "candidate detected, waiting for confirmation"
                                 : "candidate detected, accumulating frames");
+        ROS_INFO("[target] state=%s source=drone%d confidence=%.2f",
+                 target_state_ == coord_msgs::TargetStatus::VERIFYING ? "VERIFYING" : "CANDIDATE",
+                 source_index + 1, msg->confidence);
       }
     }
   }

@@ -45,6 +45,12 @@
   <arg name="target_prior_growth" default="0.12"/>
   <arg name="target_prior_max_radius" default="10.0"/>
   <arg name="target_sensor_max_range" default="7.0"/>
+  <arg name="target_confirm_frames" default="3"/>
+  <arg name="target_confirm_window" default="2.5"/>
+  <arg name="target_high_confidence" default="0.80"/>
+  <arg name="target_low_confidence" default="0.45"/>
+  <arg name="target_verification_sources" default="2"/>
+  <arg name="target_verification_timeout" default="10.0"/>
 
   <include file="$(find exploration_manager)/launch/multi/multi_sim.launch">
     <arg name="map_file" value="$(arg map_file)"/>
@@ -79,6 +85,12 @@
     <arg name="target_prior_growth" value="$(arg target_prior_growth)"/>
     <arg name="target_prior_max_radius" value="$(arg target_prior_max_radius)"/>
     <arg name="target_sensor_max_range" value="$(arg target_sensor_max_range)"/>
+    <arg name="target_confirm_frames" value="$(arg target_confirm_frames)"/>
+    <arg name="target_confirm_window" value="$(arg target_confirm_window)"/>
+    <arg name="target_high_confidence" value="$(arg target_high_confidence)"/>
+    <arg name="target_low_confidence" value="$(arg target_low_confidence)"/>
+    <arg name="target_verification_sources" value="$(arg target_verification_sources)"/>
+    <arg name="target_verification_timeout" value="$(arg target_verification_timeout)"/>
     <arg name="box_x_min" value="$(arg box_x_min)"/>
     <arg name="box_y_min" value="$(arg box_y_min)"/>
     <arg name="box_z_min" value="$(arg box_z_min)"/>
