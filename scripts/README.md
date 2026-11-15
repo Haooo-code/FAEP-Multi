@@ -59,3 +59,16 @@ RViz 标记；设置
 跨场景目标搜索使用 `TARGET_SEARCH_MAP=office3` 切换地图；覆盖率记录节点为
 `target_coverage_logger.py`，汇总与成图由 `analyze_target_search_coverage.py`
 完成。
+
+国赛 RViz 全场景录屏使用：
+
+```bash
+bash scripts/record_defense_video.sh single
+bash scripts/record_defense_video.sh independent
+bash scripts/record_defense_video.sh partition
+bash scripts/record_defense_video.sh target
+bash scripts/compose_defense_demo.sh
+```
+
+录像配置由 `make_recording_rviz.py` 生成，默认显示全景点云、三机局部地图、
+相机 FOV、轨迹和机体。WSLg 下使用 `xwd` 以 10 fps 抓帧，再编码为 30 fps。
