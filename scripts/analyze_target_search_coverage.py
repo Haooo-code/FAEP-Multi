@@ -77,6 +77,10 @@ for name, label, stopped in CONFIGS:
     halt = coverage.get("halt_coverage") or {}
     status_time = float(status.get("time_from_start_s", 0))
     halt_time = float(halt.get("time_from_start_s", status_time))
+    wall_time = float(summary.get("wall_s", 0))
+    recorder_offset = max(0.0, halt_time - wall_time)
+    status_time_from_wall = max(0.0, status_time - recorder_offset)
+    extra_time_from_wall = max(0.0, halt_time - status_time)
     status_coverage = float(status.get("union_coverage_pct", 0))
     halt_coverage = float(halt.get("union_coverage_pct", 0))
     rows.append(
@@ -89,7 +93,9 @@ for name, label, stopped in CONFIGS:
             "status": status.get("state", ""),
             "status_time_s": f"{status_time:.2f}",
             "halt_time_s": f"{halt_time:.2f}",
-            "extra_time_s": f"{max(0.0, halt_time - status_time):.2f}",
+            "extra_time_s": f"{extra_time_from_wall:.2f}",
+            "status_time_from_wall_s": f"{status_time_from_wall:.2f}",
+            "halt_time_from_wall_s": f"{wall_time:.2f}",
             "grid_m": coverage.get("grid_m", ""),
             "radius_m": coverage.get("radius_m", ""),
             "free_cells": status.get("free_cells", halt.get("free_cells", "")),
@@ -111,7 +117,7 @@ with open(OUT_CSV, "w", newline="", encoding="utf-8") as handle:
 labels = [row["label"] for row in rows]
 status_cov = np.array([float(row["status_coverage_pct"]) for row in rows])
 halt_cov = np.array([float(row["halt_coverage_pct"]) for row in rows])
-status_time = np.array([float(row["status_time_s"]) for row in rows])
+status_time = np.array([float(row["status_time_from_wall_s"]) for row in rows])
 extra_time = np.array([float(row["extra_time_s"]) for row in rows])
 
 fig, axes = plt.subplots(1, 2, figsize=(12.6, 5.4), dpi=160)
@@ -150,7 +156,7 @@ for index in x:
         )
 ax.set_xticks(x)
 ax.set_xticklabels(labels, rotation=12, ha="right")
-ax.set_ylabel("记录器启动后的时间 (s)")
+ax.set_ylabel("从统一任务触发起算的时间 (s)")
 ax.set_title("目标状态时间与确认后的额外探索", fontsize=11)
 ax.grid(axis="y", alpha=0.25)
 ax.legend(frameon=False, loc="upper left")
@@ -159,7 +165,7 @@ fig.suptitle("office3 目标搜索：跨场景验证与发现时覆盖率", font
 fig.text(
     0.5,
     0.015,
-    "覆盖率为1m网格上轨迹1m邻域的近似口径；“确认后继续”内对：68.54% → 81.46%，额外12.92pp / 52.23s。",
+    "覆盖率按1m网格上轨迹1m邻域近似；图内时间均从统一任务触发计时，与表8一致。",
     ha="center",
     fontsize=9,
     color="#5f6368",
